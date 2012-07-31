@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="D:\acoral\common"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\common&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libcommon.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="D:\acoral\project\windows\Debug"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)Debug&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
