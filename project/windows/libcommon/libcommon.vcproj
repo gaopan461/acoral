@@ -152,6 +152,10 @@
 				RelativePath="..\..\..\common\ac_log.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\..\common\ac_memory.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -167,7 +171,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\common\ac_memory.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\common\ac_thread_guard.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\common\ac_utils.h"
 				>
 			</File>
 		</Filter>
