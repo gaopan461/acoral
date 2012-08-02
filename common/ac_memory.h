@@ -46,7 +46,7 @@ namespace acoral
 		static size_t ChunkIndex(size_t bytes)
 		{
 			size_t idx = (bytes - 1) / CST_ALIGN_SIZE;
-			assert(idx >= 0 && idx < CST_CHUNK_NUMBER);
+			ACCHECK(idx >= 0 && idx < CST_CHUNK_NUMBER);
 			return idx;
 		}
 

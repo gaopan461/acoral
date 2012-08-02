@@ -63,7 +63,7 @@ namespace acoral
 		if(m_pInstance)
 			return;
 
-		assert(!m_bSingletonDestroyed);
+		ACCHECK(!m_bSingletonDestroyed);
 		static LogConsole obj;
 		m_pInstance = &obj;
 	}

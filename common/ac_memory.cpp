@@ -14,7 +14,7 @@ namespace acoral
 		if(m_pInstance)
 			return;
 
-		assert(!m_bSingletonDestroy);
+		ACCHECK(!m_bSingletonDestroy);
 		static Memory obj;
 		m_pInstance = &obj;
 	}
@@ -77,7 +77,7 @@ namespace acoral
 	void* Memory::allocate(size_t size)
 	{
 		size_t idx = ChunkIndex(size);
-		assert(idx < CST_CHUNK_NUMBER);
+		ACCHECK(idx < CST_CHUNK_NUMBER);
 
 		//锁指定大小的内存池
 		ThreadGuard guard(&m_vtGuard[idx]);
@@ -118,7 +118,7 @@ namespace acoral
 	{
 		//得到该对象大小对应的内存池
 		size_t idx = ChunkIndex(size);
-		assert(idx < CST_CHUNK_NUMBER);
+		ACCHECK(idx < CST_CHUNK_NUMBER);
 
 		SMemoryList* freeBlock = reinterpret_cast<SMemoryList *>(p);
 		ThreadGuard guard(&m_vtGuard[idx]);
