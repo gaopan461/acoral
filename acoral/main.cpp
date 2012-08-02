@@ -2,9 +2,7 @@
 #include "ac_log.h"
 #include "ac_memory.h"
 
-using namespace acoral;
-
-class A : public MemoryAlloc
+class A : public acoral::SmallMemory
 {
 public:
 	A(int n){m_nNum = n;}
@@ -13,13 +11,29 @@ private:
 	int m_nNum;
 };
 
+#define TEST
+
+namespace acoral
+{
+	int func()
+	{
+#ifdef TEST
+		Log::Instance().printf("define test\n");
+#else
+		Log::Instance().printf("not define test\n");
+#endif
+		return 0;
+	}
+}
+
 int main()
 {
 	int a = 100;
-	Log::Instance().printf("hello world, a = %d\n",a);
+	acoral::Log::Instance().printf("hello world, a = %d\n",a);
 
 	A* pa = new A(10);
-	Log::Instance().printf("A pa = %d\n", pa->Get());
+	acoral::Log::Instance().printf("A pa = %d\n", pa->Get());
+	acoral::func();
 	return 0;
 }
 

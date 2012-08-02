@@ -9,6 +9,10 @@
 #define AC_DEBUG
 #define AC_LOG
 
+#ifdef AC_DEBUG
+#define AC_DEBUG_MEMORY_ALLOCATOR
+#endif
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif

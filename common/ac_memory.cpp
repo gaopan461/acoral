@@ -4,22 +4,22 @@
 
 namespace acoral
 {
-	Memory* Memory::m_pInstance = 0;
-	long Memory::m_nSingletonGuard = 0;
-	bool Memory::m_bSingletonDestroy =false;
+	SmallMemoryAlloc* SmallMemoryAlloc::m_pInstance = 0;
+	long SmallMemoryAlloc::m_nSingletonGuard = 0;
+	bool SmallMemoryAlloc::m_bSingletonDestroy =false;
 
-	void Memory::CreateInstance()
+	void SmallMemoryAlloc::CreateInstance()
 	{
 		ThreadGuard guard(&m_nSingletonGuard);
 		if(m_pInstance)
 			return;
 
 		ACCHECK(!m_bSingletonDestroy);
-		static Memory obj;
+		static SmallMemoryAlloc obj;
 		m_pInstance = &obj;
 	}
 
-	Memory::Memory()
+	SmallMemoryAlloc::SmallMemoryAlloc()
 	{
 		m_pChunkList = 0;
 		m_nChunkGuard = 0;
@@ -27,7 +27,7 @@ namespace acoral
 		::memset(m_vtGuard,0,sizeof(m_vtGuard));
 	}
 
-	Memory::~Memory()
+	SmallMemoryAlloc::~SmallMemoryAlloc()
 	{
 		//释放所有已经分配的chunk
 		SChunkList* temp = m_pChunkList;
@@ -43,7 +43,7 @@ namespace acoral
 		m_pInstance = 0;
 	}
 
-	Memory::SMemoryList* Memory::AllocChunk(size_t idx)
+	SmallMemoryAlloc::SMemoryList* SmallMemoryAlloc::AllocChunk(size_t idx)
 	{
 		//该种chunk中每个对象的大小
 		const size_t nodeSize = (idx + 1) * CST_ALIGN_SIZE;
@@ -74,7 +74,7 @@ namespace acoral
 		return ret;
 	}
 
-	void* Memory::allocate(size_t size)
+	void* SmallMemoryAlloc::allocate(size_t size)
 	{
 		size_t idx = ChunkIndex(size);
 		ACCHECK(idx < CST_CHUNK_NUMBER);
@@ -114,7 +114,7 @@ namespace acoral
 		return ret;
 	}
 
-	void Memory::deallocate(void* p, size_t size)
+	void SmallMemoryAlloc::deallocate(void* p, size_t size)
 	{
 		//得到该对象大小对应的内存池
 		size_t idx = ChunkIndex(size);
