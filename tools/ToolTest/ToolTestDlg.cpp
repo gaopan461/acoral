@@ -96,11 +96,23 @@ BOOL CToolTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	InitCommandMap();
+
 	m_cboTest.AddString("Level1");
-		m_cboTest.AddString("Level2",INVALID_ID,ROOT_INDEX+2);
-			m_cboTest.AddString("gp1",1,ROOT_INDEX+3);
-			m_cboTest.AddString("gp2",2,ROOT_INDEX+3);
-			m_cboTest.AddString("gp3",3,ROOT_INDEX+3);
+		m_cboTest.AddString("gp1",1,ROOT_INDEX+2);
+		m_cboTest.AddString("gp2",2,ROOT_INDEX+2);
+		m_cboTest.AddString("gp3",3,ROOT_INDEX+2);
+		m_cboTest.AddString("gp4",4,ROOT_INDEX+2);
+		m_cboTest.AddString("gp5",5,ROOT_INDEX+2);
+		m_cboTest.AddString("gp6",6,ROOT_INDEX+2);
+	m_cboTest.AddString("Level2");
+		m_cboTest.AddString("gp1",1,ROOT_INDEX+2);
+		m_cboTest.AddString("gp2",2,ROOT_INDEX+2);
+		m_cboTest.AddString("gp3",3,ROOT_INDEX+2);
+		m_cboTest.AddString("gp4",4,ROOT_INDEX+2);
+		m_cboTest.AddString("gp5",5,ROOT_INDEX+2);
+		m_cboTest.AddString("gp6",INVALID_ID,ROOT_INDEX+2);
+			m_cboTest.AddString("111",11,ROOT_INDEX+3);
 
 	CImageList imgList;
 	imgList.Create(IDB_TREE_ICON, 18, 1, RGB(0xFF, 0xFF, 0xFF));
@@ -156,5 +168,10 @@ void CToolTestDlg::OnPaint()
 HCURSOR CToolTestDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void CToolTestDlg::InitCommandMap()
+{
+	REG_PROPERTY(IDC_TEST,"test",ORIGIN_STYLE_NORMAL,"");
 }
 

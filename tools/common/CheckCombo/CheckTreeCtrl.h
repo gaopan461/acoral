@@ -37,6 +37,7 @@ private:
 	void RecursiveUpdateFromState(HTREEITEM hParentItem);
 	void UpdateParentWnd();
 public:
+	void ExpandAll(HTREEITEM hRoot);
 	void UpdateToState();
 	void UpdateFromState();
 

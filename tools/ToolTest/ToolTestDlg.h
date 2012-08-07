@@ -3,11 +3,13 @@
 
 #pragma once
 #include "checkcombobox.h"
+#include "PopWindow.h"
 
 
 // CToolTestDlg 对话框
 class CToolTestDlg : public CDialog
 {
+	HANDLE_POP_CTRL
 // 构造
 public:
 	CToolTestDlg(CWnd* pParent = NULL);	// 标准构造函数
@@ -29,6 +31,8 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	void InitCommandMap();
 public:
 	CCheckComboBox m_cboTest;
 };

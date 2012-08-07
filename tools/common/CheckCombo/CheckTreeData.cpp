@@ -169,10 +169,10 @@ CString CCheckTreeData::GetCheckedTexts()
 	}
 
 	//## CHECK if all items were Checked
-	if (ElementAt(ROOT_INDEX).bChecked){
+	/*if (ElementAt(ROOT_INDEX).bChecked){
 		str = ROOT_CAPTION;
 		return str;
-	}
+	}*/
 
 	//## COLLECT all Checked items in a single string
 	long nCount = 0;
@@ -197,10 +197,10 @@ CString CCheckTreeData::GetCheckedIDs()
 
 	//## CHECK if all items were checked
 	CString str, strID;
-	if (ElementAt(ROOT_INDEX).bChecked){
+	/*if (ElementAt(ROOT_INDEX).bChecked){
 		str = ROOT_CAPTION;
 		return str;
-	}
+	}*/
 
 	//## COLLECT all checked items in a single string
 	long nCount = 0;

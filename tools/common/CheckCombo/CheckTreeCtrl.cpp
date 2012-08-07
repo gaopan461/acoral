@@ -58,8 +58,27 @@ void CCheckTreeCtrl::Populate()
 	}
 
 	//## EXPAND Root
-	this->Expand(hRoot, TVE_EXPAND);
+	this->ExpandAll(hRoot);
 }
+
+void CCheckTreeCtrl::ExpandAll(HTREEITEM hRoot)
+{
+	if(hRoot == NULL)
+		return ;
+
+	this->Expand(hRoot,TVE_EXPAND);
+	if(this->ItemHasChildren(hRoot))
+	{
+		HTREEITEM hNextItem;
+		HTREEITEM hChildItem = this->GetChildItem(hRoot);
+		while(hChildItem != NULL)
+		{
+			hNextItem = this->GetNextItem(hChildItem,TVGN_NEXT);
+			this->ExpandAll(hChildItem);
+			hChildItem = hNextItem;
+		}
+	}
+};
 //## ====================================================================================
 void CCheckTreeCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 {

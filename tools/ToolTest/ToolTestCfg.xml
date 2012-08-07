@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<testRadio>
+		<item>
+			<dlgStyle> radio </dlgStyle>
+			<name> 1:测试1 </name>
+			<type> 0 </type>
+		</item>
+		<item>
+			<dlgStyle> radio </dlgStyle>
+			<name> 2:测试2 </name>
+			<type> 1 </type>
+		</item>
+	</testRadio>
+</root>

@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(SolutionDir)..\common\CheckCombo"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\deps\rapidxml-1.13&quot;;&quot;$(SolutionDir)..\common\CheckCombo&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -199,6 +199,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PopWindow.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -242,6 +246,10 @@
 			</File>
 			<File
 				RelativePath="..\common\CheckCombo\CheckTreeData.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PopWindow.h"
 				>
 			</File>
 			<File
