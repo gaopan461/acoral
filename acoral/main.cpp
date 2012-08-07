@@ -34,6 +34,11 @@ int main()
 	A* pa = new A(10);
 	acoral::Log::Instance().printf("A pa = %d\n", pa->Get());
 	acoral::func();
+
+	DEBUG_MSG("This is a debug message,a = %d\n",a);
+	ERROR_MSG("This is a error message,a = %d\n",a);
+	WARN_MSG("This is a warning message,a = %d\n",a);
+	INFO_MSG("This is a information message,a = %d\n",a);
 	return 0;
 }
 
