@@ -172,6 +172,6 @@ HCURSOR CToolTestDlg::OnQueryDragIcon()
 
 void CToolTestDlg::InitCommandMap()
 {
-	REG_PROPERTY(IDC_TEST,"test",ORIGIN_STYLE_NORMAL,"");
+	REG_PROPERTY(IDC_TEST,"test",ORIGIN_STYLE_EDITRADIO);
 }
 

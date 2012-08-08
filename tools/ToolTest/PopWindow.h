@@ -5,14 +5,16 @@
 #include <vector>
 
 //====================================================================================
-#define ORIGIN_STYLE_NORMAL				0
-#define ORIGIN_STYLE_LISTBOX			1
-#define ORIGIN_STYLE_EDITTUPLEBOX		2
+// 可弹出配置窗口的控件类型
+#define ORIGIN_STYLE_EDITRADIO			0	//编辑框，单选
+#define ORIGIN_STYLE_LISTBOX			1	//列表框，多选
+#define ORIGIN_STYLE_EDITTUPLE			2	//编辑框，多选
 
 struct SCustonPropertyOriginInfo;
 struct SPopPropertyInfo;
 
 //====================================================================================
+// 捕获右键消息，用于弹出配置窗口
 extern bool g_bIsPopMenu;
 
 #define HANDLE_POP_CTRL \
@@ -43,6 +45,17 @@ extern bool g_bIsPopMenu;
 //===================================================================================
 // CPopWindow 对话框
 
+struct SRadioItem
+{
+	std::string m_strName;
+	int m_nValue;
+};
+
+struct SRadioInfo
+{
+	std::vector<SRadioItem> m_vtRadioInfo;
+};
+
 class CPopWindow : public CDialog
 {
 	DECLARE_DYNAMIC(CPopWindow)
@@ -60,9 +73,12 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
+	virtual BOOL OnInitDialog();
+	afx_msg void OnClose();
+public:
 	void SetOrigin(CWnd* pWnd);
 	BOOL Show();
-	afx_msg void OnClose();
+	void LoadConfig();
 private:
 	CWnd* m_pOriginWnd;
 	std::vector<CWnd*> m_vtWnds;
@@ -80,13 +96,12 @@ struct SPopPropertyInfo
 //===================================================================================
 struct SCustonPropertyOriginInfo
 {
-	std::string name,sourceName;
+	std::string name;
 	int dlgStyle;
 
 	SCustonPropertyOriginInfo()
 	{
 		name = "";
-		sourceName = "";
 		dlgStyle = 0;
 	}
 };
@@ -94,4 +109,4 @@ struct SCustonPropertyOriginInfo
 typedef std::map<int,SCustonPropertyOriginInfo> CollectionPropertyInfosT;
 extern CollectionPropertyInfosT g_mapPropertyMaps;
 
-bool REG_PROPERTY(int PID, const char* name, int dlgStyle, const char* sourcename);
+bool REG_PROPERTY(int PID, const char* name, int dlgStyle);

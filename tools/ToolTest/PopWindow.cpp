@@ -32,6 +32,23 @@ void CPopWindow::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 }
 
+BOOL CPopWindow::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+	LoadConfig();
+	return TRUE;
+}
+
+void CPopWindow::LoadConfig()
+{
+	rapidxml::xml_document<> XMLDoc;
+	rapidxml::file<> fdoc("ToolTestCfg.xml");
+	rapidxml::xml_node<>* XMLRoot;
+	XMLDoc.parse<0>(fdoc.data());
+	XMLRoot = XMLDoc.first_node("root");
+	rapidxml::xml_node<>* node = XMLRoot->first_node("testRadio");
+}
+
 
 BEGIN_MESSAGE_MAP(CPopWindow, CDialog)
 	ON_WM_CLOSE()
@@ -60,13 +77,12 @@ afx_msg void CPopWindow::OnClose()
 //===================================================================================
 CollectionPropertyInfosT g_mapPropertyMaps;
 
-bool REG_PROPERTY(int PID, const char* name, int dlgStyle, const char* sourcename)
+bool REG_PROPERTY(int PID, const char* name, int dlgStyle)
 {
 	ASSERT(g_mapPropertyMaps.find(PID) == g_mapPropertyMaps.end());
 	SCustonPropertyOriginInfo propertyInfo;
 	propertyInfo.name = name;
 	propertyInfo.dlgStyle = dlgStyle;
-	propertyInfo.sourceName = sourcename;
 	g_mapPropertyMaps.insert(std::make_pair(PID,propertyInfo));
 	return true;
 }
