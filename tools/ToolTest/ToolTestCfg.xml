@@ -4,12 +4,22 @@
 		<item>
 			<dlgStyle> radio </dlgStyle>
 			<name> 1:测试1 </name>
-			<type> 0 </type>
+			<value> 0 </value>
+			<checked> 1 </checked>
+			<nonewline> 1 </nonewline>
+			<width> 200 </width>
 		</item>
 		<item>
 			<dlgStyle> radio </dlgStyle>
 			<name> 2:测试2 </name>
-			<type> 1 </type>
+			<value> 1 </value>
+			<nonewline> 1 </nonewline>
+			<width> 100 </width>
+		</item>
+		<item>
+			<dlgStyle> radio </dlgStyle>
+			<name> 3:测试3 </name>
+			<value> 2 </value>
 		</item>
 	</testRadio>
 </root>

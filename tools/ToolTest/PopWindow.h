@@ -19,6 +19,11 @@
 #define POP_STYLE_PARAM_COMBOX			1	//组合框
 #define POP_STYLE_PARAM_COMCHECKBOX		2	//组合复选框
 
+#define DEFAULT_HEIGHT					20		//控件默认高度
+#define MAIN_DEFAULT_WIDTH				"100"	//主控件默认宽度
+#define PARAM_DEFAULT_WIDTH				"100"	//参数文本控件默认宽度
+#define PARAM_DEFAULT_WIDTH1			"100"	//参数控件默认高度
+
 struct SOriginControlInfo;
 struct SPopItem;
 struct SPopControlMainInfo;
@@ -77,7 +82,6 @@ public:
 public:
 	void SetOrigin(CWnd* pWnd);
 	BOOL Show();
-	void LoadConfig();
 private:
 	CWnd* m_pOriginWnd;								//原始控件
 	std::vector<CWnd*> m_vtWnds;					//全部控件
@@ -175,3 +179,7 @@ void DECLARE_SOURCE_EDIT_DEFTYPE_AND_PARAMS(bool ISWRITETODB, int DLGID, const c
 void DECLARE_SOURCE_TUPLEEDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
 //读/写复选框
 void DECLARE_SOURCE_CHECKBOX(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+
+//===================================================================================
+void ConvertGBKToUTF8(CString& strGBK);
+void ConvertUTF8ToGBK(CString& strUTF8);
