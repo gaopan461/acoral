@@ -5,13 +5,24 @@
 #include <vector>
 
 //====================================================================================
-// 可弹出配置窗口的控件类型
+// 原始控件类型
 #define ORIGIN_STYLE_EDITRADIO			0	//编辑框，单选
 #define ORIGIN_STYLE_LISTBOX			1	//列表框，多选
 #define ORIGIN_STYLE_EDITTUPLE			2	//编辑框，多选
 
-struct SCustonPropertyOriginInfo;
-struct SPopPropertyInfo;
+// 弹出控件类型，主控件
+#define POP_STYLE_MAIN_RADIO			0	//单选框
+#define POP_STYLE_MAIN_CHECKBOX			1	//复选框
+
+//弹出控件类型，参数控件
+#define POP_STYLE_PARAM_EDIT			0	//编辑框
+#define POP_STYLE_PARAM_COMBOX			1	//组合框
+#define POP_STYLE_PARAM_COMCHECKBOX		2	//组合复选框
+
+struct SOriginControlInfo;
+struct SPopItem;
+struct SPopControlMainInfo;
+struct SPopControlParamInfo;
 
 //====================================================================================
 // 捕获右键消息，用于弹出配置窗口
@@ -24,8 +35,8 @@ extern bool g_bIsPopMenu;
 		{\
 			CWnd* wnd = WindowFromPoint(pMsg->pt);\
 			CPopWindow popWin(IDD_POP);\
-			CollectionPropertyInfosT::iterator iter = g_mapPropertyMaps.find(wnd->GetDlgCtrlID());\
-			if(iter != g_mapPropertyMaps.end())\
+			CollectionOriginInfosT::iterator iter = g_mapOriginInfos.find(wnd->GetDlgCtrlID());\
+			if(iter != g_mapOriginInfos.end())\
 			{\
 				popWin.SetOrigin(wnd);\
 				popWin.Show();\
@@ -44,18 +55,6 @@ extern bool g_bIsPopMenu;
 
 //===================================================================================
 // CPopWindow 对话框
-
-struct SRadioItem
-{
-	std::string m_strName;
-	int m_nValue;
-};
-
-struct SRadioInfo
-{
-	std::vector<SRadioItem> m_vtRadioInfo;
-};
-
 class CPopWindow : public CDialog
 {
 	DECLARE_DYNAMIC(CPopWindow)
@@ -80,33 +79,99 @@ public:
 	BOOL Show();
 	void LoadConfig();
 private:
-	CWnd* m_pOriginWnd;
-	std::vector<CWnd*> m_vtWnds;
-	std::vector<SPopPropertyInfo*> m_vtPropertyInfos;
+	CWnd* m_pOriginWnd;								//原始控件
+	std::vector<CWnd*> m_vtWnds;					//全部控件
+	std::vector<SPopItem*> m_vtPopItems;			//全部控件
 };
 
-struct SPopPropertyInfo
+//弹出的一行控件信息
+struct SPopItem
 {
-	SCustonPropertyOriginInfo* m_pProperty;
+	SPopControlMainInfo* m_pMainInfo;
 	CWnd* m_pMainWnd;
 	std::vector<CWnd*> m_vtParamWnds;
-	std::map<HWND,SCustonPropertyOriginInfo*> m_mapWndToInfos;
+	std::map<HWND,SPopControlParamInfo*> m_mapParamInfos;
 };
 
 //===================================================================================
-struct SCustonPropertyOriginInfo
+//原始控件的信息
+struct SOriginControlInfo
 {
-	std::string name;
-	int dlgStyle;
+	std::string m_strName;		//关联的xml项的名字
+	int m_nDlgStyle;			//原始控件的类型
 
-	SCustonPropertyOriginInfo()
+	SOriginControlInfo()
 	{
-		name = "";
-		dlgStyle = 0;
+		m_strName = "";
+		m_nDlgStyle = 0;
 	}
 };
 
-typedef std::map<int,SCustonPropertyOriginInfo> CollectionPropertyInfosT;
-extern CollectionPropertyInfosT g_mapPropertyMaps;
+//存储所有原始控件和xml关联的映射表
+//key为原始空的资源ID，value为原始控件的信息
+typedef std::map<int,SOriginControlInfo> CollectionOriginInfosT;
+extern CollectionOriginInfosT g_mapOriginInfos;
 
+//注册原始控件到映射表（将原始控件和xml关联）
 bool REG_PROPERTY(int PID, const char* name, int dlgStyle);
+
+//===================================================================================
+//弹出控件，参数控件
+struct SPopControlParamInfo
+{
+	std::string m_strName;			//显示的参数名
+	std::string m_strCName;			//实际存储的参数名
+	std::map<std::string,std::string> m_mapValue;	//显示的参数值:实际存储的参数值（只能是comcheckbox和combox）
+	std::string m_strDlgStyle;		//控件类型，只能是（comcheckbox，combox，edit）
+	std::string m_strReverse;		//保存时需要做的转换，只能是combox
+	std::string m_strDefault;		//默认值（用于combox和edit，comcheckbox默认都不选）
+	std::string m_strDescr;			//注释
+	int m_nWidth,m_nHeight;			//文本控件的宽高（参数名）
+	int m_nStartWidth,m_nStartHeight;//文本控件起始位置（参数名）
+	int m_nWidth1,m_nHeight1;		//控件的宽高（参数值）
+
+};
+//弹出控件，主控件
+struct SPopControlMainInfo
+{
+	std::string m_strName;			//显示值
+	int m_nValue;					//实际存储的值
+	std::string m_strDlgStyle;		//控件类型，只能是（radio和checkbox）
+	std::string m_strDescr;			//注释
+	bool m_bChecked;				//默认是否选中
+	bool m_bNonewline;				//是否不换行
+	int m_nWidth,m_nHeight;			//控件宽高
+	int m_nStartWidth,m_nStartHeight;//控件起始位置
+	std::vector<SPopControlParamInfo*> m_vtParams;	//参数控件
+};
+
+//一个弹出窗口的所有主控件
+typedef std::vector<SPopControlMainInfo*> CollectionPopControlInfosT;
+//xml名字和它对应的弹出窗口
+typedef std::map<std::string,CollectionPopControlInfosT> CollectionPopInfosT;
+extern CollectionPopInfosT g_mapPopInfos;
+
+//===================================================================================
+//载入xml文件
+bool LoadPopConfig(std::string name);
+
+//读/写ID
+void DECLARE_NO(bool ISWRITETODB, int DLGID, const char* NAME);
+//读/写列表框（自定义类型，需要在外部表示和内部表示间转换）
+void DECLARE_SOURCE_LISTBOX_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME);
+//读/写列表框（整形）
+void DECLARE_SOURCE_LISTBOX_INT(bool ISWRITETODB, int DLGID, const char* NAME);
+//读/写编辑框（整形）
+void DECLARE_SOURCE_EDIT_INT(bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL);
+//读/写编辑框（字符串）
+void DECLARE_SOURCE_EDIT_STR(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+//读/写编辑框（浮点型）
+void DECLARE_SOURCE_EDIT_DOUBLE(bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL);
+//读/写编辑框（自定义类型，需要在外部表示和内部表示间转换）
+void DECLARE_SOURCE_EDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+//读/写编辑框（自定义类型，需要在外部表示和内部表示间转换，带参数）
+void DECLARE_SOURCE_EDIT_DEFTYPE_AND_PARAMS(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+//读/写编辑框（自定义类型，需要在外部表示和内部表示间转换，包含多条记录）
+void DECLARE_SOURCE_TUPLEEDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+//读/写复选框
+void DECLARE_SOURCE_CHECKBOX(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);

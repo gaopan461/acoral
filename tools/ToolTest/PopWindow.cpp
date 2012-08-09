@@ -75,14 +75,63 @@ afx_msg void CPopWindow::OnClose()
 }
 
 //===================================================================================
-CollectionPropertyInfosT g_mapPropertyMaps;
+CollectionOriginInfosT g_mapOriginInfos;
 
 bool REG_PROPERTY(int PID, const char* name, int dlgStyle)
 {
-	ASSERT(g_mapPropertyMaps.find(PID) == g_mapPropertyMaps.end());
-	SCustonPropertyOriginInfo propertyInfo;
-	propertyInfo.name = name;
-	propertyInfo.dlgStyle = dlgStyle;
-	g_mapPropertyMaps.insert(std::make_pair(PID,propertyInfo));
+	ASSERT(g_mapOriginInfos.find(PID) == g_mapOriginInfos.end());
+	SOriginControlInfo originInfo;
+	originInfo.m_strName = name;
+	originInfo.m_nDlgStyle = dlgStyle;
+	g_mapOriginInfos.insert(std::make_pair(PID,originInfo));
 	return true;
+}
+
+//===================================================================================
+CollectionPopInfosT g_mapPopInfos;
+
+//===================================================================================
+bool LoadPopConfig(std::string name)
+{
+	return true;
+}
+
+void DECLARE_NO(bool ISWRITETODB, int DLGID, const char* NAME)
+{
+}
+
+void DECLARE_SOURCE_LISTBOX_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME)
+{
+}
+
+void DECLARE_SOURCE_LISTBOX_INT(bool ISWRITETODB, int DLGID, const char* NAME)
+{
+}
+
+void DECLARE_SOURCE_EDIT_INT(bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
+{
+}
+
+void DECLARE_SOURCE_EDIT_STR(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+}
+
+void DECLARE_SOURCE_EDIT_DOUBLE(bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
+{
+}
+
+void DECLARE_SOURCE_EDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+}
+
+void DECLARE_SOURCE_EDIT_DEFTYPE_AND_PARAMS(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+}
+
+void DECLARE_SOURCE_TUPLEEDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+}
+
+void DECLARE_SOURCE_CHECKBOX(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
 }
