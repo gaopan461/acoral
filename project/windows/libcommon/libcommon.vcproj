@@ -41,6 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\deps\lua5.1\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -60,6 +61,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="lua51.lib"
+				OutputFile="$(SolutionDir)\lib\$(ProjectName).lib"
+				AdditionalLibraryDirectories="$(SolutionDir)..\..\deps\lua5.1\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -153,6 +157,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\common\ac_lua.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\common\ac_memory.cpp"
 				>
 			</File>
@@ -172,6 +180,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\common\ac_log.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\common\ac_lua.h"
 				>
 			</File>
 			<File

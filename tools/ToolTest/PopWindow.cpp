@@ -107,10 +107,13 @@ bool LoadPopConfig(std::string name)
 	for(rapidxml::xml_node<>* propertyNode = XMLRoot->first_node(); propertyNode != NULL; propertyNode = propertyNode->next_sibling())
 	{
 		std::string propertyName = propertyNode->name();
-		MessageBox(NULL,propertyName.c_str(),NULL,MB_OK);
+		CollectionPopControlInfosT vtPopControlInfos;
+		vtPopControlInfos.clear();
+		int startHeight = 0;
 		for(rapidxml::xml_node<>* mainItem = propertyNode->first_node("item"); mainItem != NULL; mainItem = mainItem->next_sibling("item"))
 		{
-			SPopControlMainInfo mainInfo;
+			int startWidth = 0;
+			SPopControlMainInfo* mainInfo = new SPopControlMainInfo();
 
 			rapidxml::xml_node<>* nodeM;
 			nodeM				= mainItem->first_node("dlgStyle");
@@ -120,33 +123,34 @@ bool LoadPopConfig(std::string name)
 			CString dlgStyleM	= nodeM->value();					dlgStyleM.Trim();
 			if(!ValidPopMainStyle(dlgStyleM))
 				continue;
-			mainInfo.m_strDlgStyle = dlgStyleM.GetBuffer();
+			mainInfo->m_strDlgStyle = dlgStyleM.GetBuffer();
 
 			nodeM				= mainItem->first_node("name");
 			CString nameM		= nodeM ? nodeM->value() : "";		nameM.Trim();ConvertUTF8ToGBK(nameM);
-			mainInfo.m_strName	= nameM.GetBuffer();
+			mainInfo->m_strName	= nameM.GetBuffer();
 			nodeM				= mainItem->first_node("value");
 			CString valueM		= nodeM ? nodeM->value() : "0";		valueM.Trim();
-			mainInfo.m_nValue	= atoi(valueM.GetBuffer());
+			mainInfo->m_nValue	= atoi(valueM.GetBuffer());
 			nodeM				= mainItem->first_node("checked");
 			CString checkedM	= nodeM ? nodeM->value() : "0";		checkedM.Trim();
-			mainInfo.m_bChecked = (bool)atoi(checkedM.GetBuffer());
+			mainInfo->m_bChecked = (bool)atoi(checkedM.GetBuffer());
 			nodeM				= mainItem->first_node("nonewline");
 			CString nonewlineM	= nodeM ? nodeM->value() : "0";		nonewlineM.Trim();
-			mainInfo.m_bNonewline = (bool)atoi(nonewlineM.GetBuffer());
+			mainInfo->m_bNonewline = (bool)atoi(nonewlineM.GetBuffer());
 			nodeM				= mainItem->first_node("width");
 			CString widthM		= nodeM ? nodeM->value() : MAIN_DEFAULT_WIDTH;	widthM.Trim();
-			mainInfo.m_nWidth	= atoi(widthM.GetBuffer());
+			mainInfo->m_nWidth	= atoi(widthM.GetBuffer());
 			nodeM				= mainItem->first_node("descr");
-			CString descrM		= nodeM ? nodeM->value() : "";		descrM.Trim();
-			mainInfo.m_strDescr	= descrM.GetBuffer();
-			mainInfo.m_nHeight	= DEFAULT_HEIGHT;
-			mainInfo.m_nStartWidth = 0;
-			mainInfo.m_nStartHeight = -1;
+			CString descrM		= nodeM ? nodeM->value() : "";		descrM.Trim();ConvertUTF8ToGBK(descrM);
+			mainInfo->m_strDescr	= descrM.GetBuffer();
+			mainInfo->m_nHeight	= DEFAULT_HEIGHT;
+			mainInfo->m_nStartWidth = startWidth;
+			startWidth = startWidth + mainInfo->m_nWidth;
+			mainInfo->m_nStartHeight = startHeight;
 
-			for(rapidxml::xml_node<>* paramItem = propertyNode->first_node("param"); paramItem != NULL; paramItem = paramItem->next_sibling("param"))
+			for(rapidxml::xml_node<>* paramItem = mainItem->first_node("param"); paramItem != NULL; paramItem = paramItem->next_sibling("param"))
 			{
-				SPopControlParamInfo paramInfo;
+				SPopControlParamInfo* paramInfo = new SPopControlParamInfo();
 
 				rapidxml::xml_node<>* nodeP;
 				nodeP				= paramItem->first_node("dlgStyle");
@@ -156,77 +160,91 @@ bool LoadPopConfig(std::string name)
 				CString dlgStyleP	= nodeP->value();				dlgStyleP.Trim();
 				if(!ValidPopParamStyle(dlgStyleP))
 					continue;
-				paramInfo.m_strDlgStyle = dlgStyleP.GetBuffer();
+				paramInfo->m_strDlgStyle = dlgStyleP.GetBuffer();
+				for(rapidxml::xml_node<> * paramDlgItem = nodeP->first_node("item"); paramDlgItem != NULL; paramDlgItem = paramDlgItem->next_sibling())
+				{
+					rapidxml::xml_node<>* dlgItemNodeP;
+					dlgItemNodeP = paramDlgItem->first_node("name");
+					CString dlgItemNameP = dlgItemNodeP ? dlgItemNodeP->value() : ""; dlgItemNameP.Trim();ConvertUTF8ToGBK(dlgItemNameP);
+					dlgItemNodeP = paramDlgItem->first_node("value");
+					CString dlgItemValueP = dlgItemNodeP ? dlgItemNodeP->value() : ""; dlgItemValueP.Trim();
+					paramInfo->m_mapValue.insert(std::make_pair(dlgItemNameP.GetBuffer(),dlgItemValueP.GetBuffer()));
+				}
 
 				nodeP				= paramItem->first_node("name");
 				CString nameP		= nodeP ? nodeP->value() : "";	nameP.Trim();ConvertUTF8ToGBK(nameP);
-				paramInfo.m_strName	= nameP.GetBuffer();
+				paramInfo->m_strName	= nameP.GetBuffer();
 				nodeP				= paramItem->first_node("cname");
 				CString cnameP		= nodeP ? nodeP->value() : "";	cnameP.Trim();
-				paramInfo.m_strCName= cnameP.GetBuffer();
+				paramInfo->m_strCName= cnameP.GetBuffer();
 				nodeP				= paramItem->first_node("reverse");
 				CString reverseP	= nodeP ? nodeP->value() : "";	reverseP.Trim();
-				paramInfo.m_strReverse = reverseP.GetBuffer();
+				paramInfo->m_strReverse = reverseP.GetBuffer();
 				nodeP				= paramItem->first_node("default");
-				CString defaultP	= nodeP ? nodeP->value() : "";	defaultP.Trim();
-				paramInfo.m_strDefault = defaultP.GetBuffer();
+				CString defaultP	= nodeP ? nodeP->value() : "";	defaultP.Trim();ConvertUTF8ToGBK(defaultP);
+				paramInfo->m_strDefault = defaultP.GetBuffer();
 				nodeP				= paramItem->first_node("descr");
-				CString descrP		= nodeP ? nodeP->value() : "";	descrP.Trim();
-				paramInfo.m_strDescr = descrP.GetBuffer();
+				CString descrP		= nodeP ? nodeP->value() : "";	descrP.Trim();ConvertUTF8ToGBK(descrP);
+				paramInfo->m_strDescr = descrP.GetBuffer();
 				nodeP				= paramItem->first_node("width");
 				CString widthP		= nodeP ? nodeP->value() : PARAM_DEFAULT_WIDTH;	 widthP.Trim();
-				paramInfo.m_nWidth	= atoi(widthP.GetBuffer());
+				paramInfo->m_nWidth	= atoi(widthP.GetBuffer());
 				nodeP				= paramItem->first_node("width1");
 				CString width1P		= nodeP ? nodeP->value() : PARAM_DEFAULT_WIDTH1; width1P.Trim();
-				paramInfo.m_nWidth1	= atoi(width1P.GetBuffer());
-				paramInfo.m_nHeight = DEFAULT_HEIGHT;
-				paramInfo.m_nHeight1= DEFAULT_HEIGHT;
-				paramInfo.m_nStartWidth = -1;
-				paramInfo.m_nStartHeight= -1;
+				paramInfo->m_nWidth1	= atoi(width1P.GetBuffer());
+				paramInfo->m_nHeight = DEFAULT_HEIGHT;
+				paramInfo->m_nHeight1= DEFAULT_HEIGHT;
+				paramInfo->m_nStartWidth = startWidth;
+				startWidth = startWidth + paramInfo->m_nWidth + paramInfo->m_nWidth1;
+				paramInfo->m_nStartHeight= startHeight;
+				mainInfo->m_vtParams.push_back(paramInfo);
 			}
+			startHeight = startHeight + DEFAULT_HEIGHT;
+			vtPopControlInfos.push_back(mainInfo);
 		}
+		g_mapPopInfos.insert(std::make_pair(propertyName,vtPopControlInfos));
 	}
 
 	return true;
 }
 
-void DECLARE_NO(bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareNo(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DECLARE_SOURCE_LISTBOX_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareSourceListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DECLARE_SOURCE_LISTBOX_INT(bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareSourceListBoxInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DECLARE_SOURCE_EDIT_INT(bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
+void DeclareSourceEditInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
 {
 }
 
-void DECLARE_SOURCE_EDIT_STR(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareSourceEditStr(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DECLARE_SOURCE_EDIT_DOUBLE(bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
+void DeclareSourceEditDouble(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
 {
 }
 
-void DECLARE_SOURCE_EDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareSourceEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DECLARE_SOURCE_EDIT_DEFTYPE_AND_PARAMS(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareSourceEditDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DECLARE_SOURCE_TUPLEEDIT_DEFTYPE(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareSourceTupleEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DECLARE_SOURCE_CHECKBOX(bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareSourceCheckBox(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 

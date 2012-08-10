@@ -22,4 +22,81 @@
 			<value> 2 </value>
 		</item>
 	</testRadio>
+	
+	<testCheck>
+		<item>
+			<dlgStyle> checkbox </dlgStyle>
+			<name> 1:测试1 </name>
+			<value> 0 </value>
+			<checked> 1 </checked>
+			<nonewline> 1 </nonewline>
+			<width> 200 </width>
+			<descr> 注释 </descr>
+			<param>
+				<dlgStyle> combox 
+					<item>
+						<name> 高攀1 </name>
+						<value> 0 </value>
+					</item>
+					<item>
+						<name> 高攀2 </name>
+						<value> 1 </value>
+					</item>
+					<item>
+						<name> 高攀3 </name>
+						<value> 2 </value>
+					</item>
+				</dlgStyle>
+				<name> 参数1 </name>
+				<cname> param1 </cname>
+				<reverse> bool </reverse>
+				<default> 高攀1 </default>
+				<descr> 参数注释1 </descr>
+				<width> 200 </width>
+				<width1> 200 </width1>
+			</param>
+			<param>
+				<dlgStyle> comcheckbox 
+					<item>
+						<name> 美艳1 </name>
+						<value> 0 </value>
+					</item>
+					<item>
+						<name> 美艳2 </name>
+						<value> 1 </value>
+					</item>
+				</dlgStyle>
+				<name> 参数2 </name>
+				<cname> param2 </cname>
+				<default> 美艳2 </default>
+				<descr> 参数注释2 </descr>
+			</param>
+			<param>
+				<dlgStyle> edit </dlgStyle>
+				<name> 参数3 </name>
+				<cname> param3 </cname>
+				<default> 王芬 </default>
+				<descr> 参数注释3 </descr>
+			</param>
+		</item>
+		<item>
+			<dlgStyle> checkbox </dlgStyle>
+			<name> 2:测试2 </name>
+			<value> 1 </value>
+			<nonewline> 1 </nonewline>
+			<width> 100 </width>
+			<param>
+				<dlgStyle> edit </dlgStyle>
+				<name> 参数1 </name>
+				<cname> param1 </cname>
+				<default> 王芬 </default>
+				<descr> 参数注释1 </descr>
+			</param>
+		</item>
+		<item>
+			<dlgStyle> checkbox </dlgStyle>
+			<name> 3:测试3 </name>
+			<value> 2 </value>
+		</item>
+	</testCheck>
 </root>
