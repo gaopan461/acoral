@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalDependencies="lua51.lib"
-				OutputFile="$(SolutionDir)\lib\$(ProjectName).lib"
+				OutputFile="$(SolutionDir)\Debug\$(ProjectName).lib"
 				AdditionalLibraryDirectories="$(SolutionDir)..\..\deps\lua5.1\lib"
 			/>
 			<Tool
