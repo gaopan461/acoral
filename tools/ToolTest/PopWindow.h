@@ -5,6 +5,7 @@
 #include <vector>
 #include "ac_lua.h"
 
+#define USER_CTRL_ID_START				30000
 //====================================================================================
 // 原始控件类型
 #define ORIGIN_STYLE_EDITRADIO			0	//编辑框，单选
@@ -83,7 +84,9 @@ public:
 public:
 	void SetOrigin(CWnd* pWnd);
 	BOOL Show();
+	void CreatePopMain(SPopControlMainInfo* pMainInfo);
 private:
+	int m_nId;
 	CWnd* m_pOriginWnd;								//原始控件
 	std::vector<CWnd*> m_vtWnds;					//全部控件
 	std::vector<SPopItem*> m_vtPopItems;			//全部控件

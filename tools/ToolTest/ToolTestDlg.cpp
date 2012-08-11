@@ -55,6 +55,7 @@ CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 void CToolTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST1, m_test1);
 }
 
 BEGIN_MESSAGE_MAP(CToolTestDlg, CDialog)
@@ -160,6 +161,6 @@ HCURSOR CToolTestDlg::OnQueryDragIcon()
 
 void CToolTestDlg::InitCommandMap()
 {
-	REG_PROPERTY(IDC_TEST,"test",ORIGIN_STYLE_EDITRADIO);
+	REG_PROPERTY(IDC_LIST1,"testCheck",ORIGIN_STYLE_LISTBOX);
 }
 

@@ -35,12 +35,18 @@ IMPLEMENT_DYNAMIC(CPopWindow, CDialog)
 
 CPopWindow::CPopWindow(int resID, CWnd* pParent /*=NULL*/)
 	: CDialog(resID, pParent)
+	, m_nId(USER_CTRL_ID_START)
 {
 
 }
 
 CPopWindow::~CPopWindow()
 {
+	for(std::vector<SPopItem*>::iterator iter1 = m_vtPopItems.begin(); iter1 != m_vtPopItems.end(); iter1++)
+		delete (*iter1);
+
+	for(std::vector<CWnd*>::iterator iter2 = m_vtWnds.begin(); iter2 != m_vtWnds.end(); iter2++)
+		delete (*iter2);
 }
 
 void CPopWindow::DoDataExchange(CDataExchange* pDX)
@@ -48,9 +54,39 @@ void CPopWindow::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 }
 
+void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
+{
+	ASSERT(pMainInfo);
+	DWORD dwStyle = WS_CHILD | WS_VISIBLE;
+	if(pMainInfo->m_strDlgStyle == "radio")
+		dwStyle |= BS_RADIOBUTTON | BS_AUTORADIOBUTTON;
+	else if(pMainInfo->m_strDlgStyle == "checkbox")
+		dwStyle |= BS_CHECKBOX | BS_AUTOCHECKBOX;
+
+	CButton* pMainCtrl = new CButton();
+	pMainCtrl->Create(NULL,dwStyle,CRect(pMainInfo->m_nStartWidth,pMainInfo->m_nStartHeight,pMainInfo->m_nStartWidth+pMainInfo->m_nWidth,pMainInfo->m_nStartHeight+20),this,m_nId++);
+	m_vtWnds.push_back((CWnd*)pMainCtrl);
+	SPopItem* pPopItem = new SPopItem();
+	pPopItem->m_pMainWnd = (CWnd*)pMainCtrl;
+	pPopItem->m_pMainInfo = pMainInfo;
+	m_vtPopItems.push_back(pPopItem);
+}
+
 BOOL CPopWindow::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+	int originDlgId = m_pOriginWnd->GetDlgCtrlID();
+	if(g_mapOriginInfos.find(originDlgId) == g_mapOriginInfos.end())
+		return TRUE;
+
+	SOriginControlInfo& originInfo = g_mapOriginInfos[originDlgId];
+	if(g_mapPopInfos.find(originInfo.m_strName) == g_mapPopInfos.end())
+		return TRUE;
+
+	CollectionPopControlInfosT& popInfo = g_mapPopInfos[originInfo.m_strName];
+	for(CollectionPopControlInfosT::iterator mainIter = popInfo.begin(); mainIter != popInfo.end(); mainIter++)
+		CreatePopMain(*mainIter);
+
 	return TRUE;
 }
 
