@@ -72,9 +72,6 @@ BOOL CPopWindow::Show()
 // CPopWindow 消息处理程序
 afx_msg void CPopWindow::OnClose()
 {
-	CCheckComboBox* check = (CCheckComboBox*)m_pOriginWnd;
-	CString str = check->GetCheckedIDs();
-	MessageBox(str.GetBuffer(0));
 	CDialog::OnClose();
 }
 

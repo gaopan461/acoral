@@ -1,6 +1,11 @@
-//#######################################################################################
-//## CheckComboBox.cpp : implementation file
-//#######################################################################################
+// CheckComboBox.cpp 
+//
+// Written by Magnus Egelberg (magnus.egelberg@lundalogik.se)
+//
+// Copyright (C) 1999, Lundalogik AB, Sweden. All rights reserved.
+// 
+//
+
 #include "stdafx.h"
 #include "CheckComboBox.h"
 
@@ -9,552 +14,411 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-//## ====================================================================================
-WNDPROC CCheckComboBox::m_parentWndProc = NULL;
-CWnd* CCheckComboBox::m_pwndActiveDropDown = NULL;
-CCheckComboBox* CCheckComboBox::m_pwndActiveCheckComboBox = NULL;
-CRect CCheckComboBox::m_rcParentRect = CRect(0, 0, 0, 0);
-//#######################################################################################
-IMPLEMENT_DYNAMIC(CCheckComboBox, CButton)
-//## ====================================================================================
+
+static WNDPROC m_pWndProc = 0;
+static CCheckComboBox *m_pComboBox = 0;
+
+
+BEGIN_MESSAGE_MAP(CCheckComboBox, CComboBox)
+	//{{AFX_MSG_MAP(CCheckComboBox)
+	ON_MESSAGE(WM_CTLCOLORLISTBOX, OnCtlColorListBox)
+	ON_MESSAGE(WM_GETTEXT, OnGetText)
+	ON_MESSAGE(WM_GETTEXTLENGTH, OnGetTextLength)
+	ON_CONTROL_REFLECT(CBN_DROPDOWN, OnDropDown)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+
+//
+// The subclassed COMBOLBOX message handler
+//
+extern "C" LRESULT FAR PASCAL ComboBoxListBoxProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
+{
+
+	switch (nMsg) {
+
+		
+		case WM_RBUTTONDOWN: {
+			// If you want to select all/unselect all using the
+			// right button, remove this ifdef. Personally, I don't really like it
+			#if FALSE
+
+				if (m_pComboBox != 0) {
+					INT nCount = m_pComboBox->GetCount();
+					INT nSelCount = 0;
+
+					for (INT i = 0; i < nCount; i++) {
+						if (m_pComboBox->GetCheck(i))
+							nSelCount++;
+					}
+
+
+					m_pComboBox->SelectAll(nSelCount != nCount);
+
+					// Make sure to invalidate this window as well
+					InvalidateRect(hWnd, 0, FALSE);
+					m_pComboBox->GetParent()->SendMessage(WM_COMMAND, MAKELONG(GetWindowLong(m_pComboBox->m_hWnd, GWL_ID), CBN_SELCHANGE), (LPARAM)m_pComboBox->m_hWnd);
+
+				}
+			#endif
+
+			break;
+		}
+
+		// Make the combobox always return -1 as the current selection. This
+		// causes the lpDrawItemStruct->itemID in DrawItem() to be -1
+		// when the always-visible-portion of the combo is drawn
+		case LB_GETCURSEL: {
+			return -1;
+		}
+
+
+		case WM_CHAR: {
+			if (wParam == VK_SPACE) {
+				// Get the current selection
+				INT nIndex = CallWindowProcA(m_pWndProc, hWnd, LB_GETCURSEL, wParam, lParam);
+
+				CRect rcItem;
+				SendMessage(hWnd, LB_GETITEMRECT, nIndex, (LONG)(VOID *)&rcItem);
+				InvalidateRect(hWnd, rcItem, FALSE);
+
+				// Invert the check mark
+				m_pComboBox->SetCheck(nIndex, !m_pComboBox->GetCheck(nIndex));
+
+				// Notify that selection has changed
+				m_pComboBox->GetParent()->SendMessage(WM_COMMAND, MAKELONG(GetWindowLong(m_pComboBox->m_hWnd, GWL_ID), CBN_SELCHANGE), (LPARAM)m_pComboBox->m_hWnd);
+				return 0;
+			}
+
+			break;
+		}
+
+
+		case WM_LBUTTONDOWN: {
+
+			CRect rcClient;
+			GetClientRect(hWnd, rcClient);
+
+			CPoint pt;
+			pt.x = LOWORD(lParam);
+			pt.y = HIWORD(lParam);
+
+
+			if (PtInRect(rcClient, pt)) {
+				INT nItemHeight = SendMessage(hWnd, LB_GETITEMHEIGHT, 0, 0);
+				INT nTopIndex   = SendMessage(hWnd, LB_GETTOPINDEX, 0, 0);
+
+				// Compute which index to check/uncheck
+				INT nIndex = nTopIndex + pt.y / nItemHeight;
+
+				CRect rcItem;
+				SendMessage(hWnd, LB_GETITEMRECT, nIndex, (LONG)(VOID *)&rcItem);
+
+				if (PtInRect(rcItem, pt)) {
+					// Invalidate this window
+					InvalidateRect(hWnd, rcItem, FALSE);
+					m_pComboBox->SetCheck(nIndex, !m_pComboBox->GetCheck(nIndex));
+
+					// Notify that selection has changed
+					m_pComboBox->GetParent()->SendMessage(WM_COMMAND, MAKELONG(GetWindowLong(m_pComboBox->m_hWnd, GWL_ID), CBN_SELCHANGE), (LPARAM)m_pComboBox->m_hWnd);
+
+
+				}
+			}
+
+			// Do the default handling now (such as close the popup
+			// window when clicked outside)
+			break;
+		}
+
+		case WM_LBUTTONUP: {
+			// Don't do anything here. This causes the combobox popup
+			// windows to remain open after a selection has been made
+			return 0;
+		}
+	}
+
+	return CallWindowProc(m_pWndProc, hWnd, nMsg, wParam, lParam);
+}
+
+
+
+
+
 CCheckComboBox::CCheckComboBox()
 {
-	//## INITIALIZE
-	m_pwndTree = NULL;
-	m_parentWndProc = NULL;
-	m_pwndActiveCheckComboBox = NULL;
-	m_nDroppedWidth = DROPPED_WIDTH_NOT_SET;
+	m_hListBox       = 0;
+	m_bTextUpdated   = FALSE;
+	m_bItemHeightSet = FALSE;
 }
-//## ====================================================================================
+
+
 CCheckComboBox::~CCheckComboBox()
 {
-	//## HIDE ActiveDropDown
-	HideActiveDropDown();
-
-	//## UNINTERCEPT
-	UnInterceptParentWndProc();
-
-	//## DESTROY Tree
-	if (m_pwndTree){
-		m_pwndTree->ShowWindow( SW_HIDE );
-		delete m_pwndTree;
-		m_pwndTree = NULL;
-	}
 }
-//## ====================================================================================
-void CCheckComboBox::OnDestroy() 
+
+
+BOOL CCheckComboBox::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
 {
-	//## CALL Parent
-	CButton::OnDestroy();
+
+	// Remove the CBS_SIMPLE and CBS_DROPDOWN styles and add the one I'm designed for
+	dwStyle &= ~0xF;
+	dwStyle |= CBS_DROPDOWNLIST;
+
+	// Make sure to use the CBS_OWNERDRAWVARIABLE style
+	dwStyle |= CBS_OWNERDRAWVARIABLE;
+
+	// Use default strings. We need the itemdata to store checkmarks
+	dwStyle |= CBS_HASSTRINGS;
+
+	return CComboBox::Create(dwStyle, rect, pParentWnd, nID);
+}
+
+
+LRESULT CCheckComboBox::OnCtlColorListBox(WPARAM wParam, LPARAM lParam) 
+{
+	// If the listbox hasn't been subclassed yet, do so...
+	if (m_hListBox == 0) {
+		HWND hWnd = (HWND)lParam;
+
+		if (hWnd != 0 && hWnd != m_hWnd) {
+			// Save the listbox handle
+			m_hListBox = hWnd;
+
+			// Do the subclassing
+			m_pWndProc = (WNDPROC)GetWindowLong(m_hListBox, GWL_WNDPROC);
+			SetWindowLong(m_hListBox, GWL_WNDPROC, (LONG)ComboBoxListBoxProc);
+		}
+	}
+
 	
-	//## HIDE ActiveDropDown
-	HideActiveDropDown();
-
-	//## UNINTERCEPT
-	UnInterceptParentWndProc();
+	return DefWindowProc(WM_CTLCOLORLISTBOX, wParam, lParam);
 }
-//#######################################################################################
-BEGIN_MESSAGE_MAP(CCheckComboBox, CButton)
-	ON_WM_DESTROY()
-	ON_WM_LBUTTONDOWN()
-	ON_WM_LBUTTONDBLCLK()
-	ON_WM_GETDLGCODE()
 
-	ON_WM_KILLFOCUS()
-END_MESSAGE_MAP()
-//#######################################################################################
-void CCheckComboBox::OnLButtonDown(UINT nFlags, CPoint point)
+
+void CCheckComboBox::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) 
 {
-	//## CALL Parent
-	CButton::OnLButtonDown(nFlags, point);
+	HDC dc = lpDrawItemStruct->hDC;
 
-	//## SHOW Tree
-	ShowDropWnd();
+	CRect rcBitmap = lpDrawItemStruct->rcItem;
+	CRect rcText   = lpDrawItemStruct->rcItem;
+
+	CString strText;
+
+	// 0 - No check, 1 - Empty check, 2 - Checked
+	INT nCheck = 0;
+
+	// Check if we are drawing the static portion of the combobox
+	if ((LONG)lpDrawItemStruct->itemID < 0) {
+		// Make sure the m_strText member is updated
+		RecalcText();
+
+		// Get the text
+		strText = m_strText;
+
+		// Don't draw any boxes on this item
+		nCheck = 0;
+	}
+
+	// Otherwise it is one of the items
+	else {
+		GetLBText(lpDrawItemStruct->itemID, strText);
+		nCheck = 1 + (GetItemData(lpDrawItemStruct->itemID) != 0);
+
+		TEXTMETRIC metrics;
+		GetTextMetrics(dc, &metrics);
+
+		rcBitmap.left    = 0;
+		rcBitmap.right   = rcBitmap.left + metrics.tmHeight + metrics.tmExternalLeading + 6;
+		rcBitmap.top    += 1;
+		rcBitmap.bottom -= 1;
+
+		rcText.left = rcBitmap.right;
+	}
+	
+	 
+
+	if (nCheck > 0) {
+		SetBkColor(dc, GetSysColor(COLOR_WINDOW));
+		SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
+
+		UINT nState = DFCS_BUTTONCHECK;
+
+		if (nCheck > 1)
+			nState |= DFCS_CHECKED;
+
+		// Draw the checkmark using DrawFrameControl
+		DrawFrameControl(dc, rcBitmap, DFC_BUTTON, nState);
+	}
+
+	if (lpDrawItemStruct->itemState & ODS_SELECTED) {
+		SetBkColor(dc, GetSysColor(COLOR_HIGHLIGHT));
+		SetTextColor(dc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+	}
+	else {
+		SetBkColor(dc, GetSysColor(COLOR_WINDOW));
+		SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
+	}
+
+	// Erase and draw
+	ExtTextOut(dc, 0, 0, ETO_OPAQUE, &rcText, 0, 0, 0);
+	DrawText(dc, ' ' + strText, strText.GetLength() + 1, &rcText, DT_SINGLELINE|DT_VCENTER|DT_END_ELLIPSIS);
+
+	if ((lpDrawItemStruct->itemState & (ODS_FOCUS|ODS_SELECTED)) == (ODS_FOCUS|ODS_SELECTED))
+		DrawFocusRect(dc, &rcText);
+	
 }
-//## ====================================================================================
-void CCheckComboBox::OnLButtonDblClk(UINT nFlags, CPoint point)
-{
-	//## CALL Parent
-	CButton::OnLButtonDown(nFlags, point);
 
-	//## SHOW Tree
-	ShowDropWnd();
-}
-//## ====================================================================================
-LRESULT CCheckComboBox::WindowProc( UINT message, WPARAM wParam, LPARAM lParam )
+
+void CCheckComboBox::MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct) 
 {
-	//## CATCH DropDown Keys
-	switch (message){
-		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN:
-			switch ((int) wParam){
-				case VK_F4:
-					ShowDropWnd();
-					return NULL;	//## INTERCEPT
-				case VK_DOWN:
-				case VK_UP:
-					if (message == WM_SYSKEYDOWN)
-						ShowDropWnd();
-					return NULL;	//## INTERCEPT
-				case VK_SPACE:
-					return NULL;	//## INTERCEPT
+	CClientDC dc(this);
+	CFont *pFont = dc.SelectObject(GetFont());
+
+	if (pFont != 0) {
+
+		TEXTMETRIC metrics;
+		dc.GetTextMetrics(&metrics);
+
+		lpMeasureItemStruct->itemHeight = metrics.tmHeight + metrics.tmExternalLeading;
+
+		// An extra height of 2 looks good I think. 
+		// Otherwise the list looks a bit crowded...
+		lpMeasureItemStruct->itemHeight += 2;
+
+
+		// This is needed since the WM_MEASUREITEM message is sent before
+		// MFC hooks everything up if used in i dialog. So adjust the
+		// static portion of the combo box now
+		if (!m_bItemHeightSet) {
+			m_bItemHeightSet = TRUE;
+			SetItemHeight(-1, lpMeasureItemStruct->itemHeight);
+		}
+
+		dc.SelectObject(pFont);
+	}
+}
+
+
+//
+// Make sure the combobox window handle is updated since
+// there may be many CCheckComboBox windows active
+//
+void CCheckComboBox::OnDropDown() 
+{
+	m_pComboBox = this;
+	
+}
+
+
+//
+// Selects/unselects all items in the list
+//
+void CCheckComboBox::SelectAll(BOOL bCheck)
+{
+	INT nCount = GetCount();
+
+	for (INT i = 0; i < nCount; i++)
+		SetCheck(i, bCheck);
+
+}
+
+
+//
+// By adding this message handler, we may use CWnd::GetText()
+//
+LRESULT CCheckComboBox::OnGetText(WPARAM wParam, LPARAM lParam)
+{
+	// Make sure the text is updated
+	RecalcText();
+
+	if (lParam == 0)
+		return 0;
+
+	// Copy the 'fake' window text
+	lstrcpyn((LPSTR)lParam, m_strText, (INT)wParam);
+	return m_strText.GetLength();
+}
+
+
+//
+// By adding this message handler, we may use CWnd::GetTextLength()
+//
+LRESULT CCheckComboBox::OnGetTextLength(WPARAM, LPARAM)
+{
+	// Make sure the text is updated
+	RecalcText();
+	return m_strText.GetLength();
+}
+
+
+//
+// This routine steps thru all the items and builds
+// a string containing the checked items
+//
+void CCheckComboBox::RecalcText()
+{
+	if (!m_bTextUpdated) {
+		CString strText;
+		
+		// Get the list count
+		INT nCount    = GetCount();
+
+		// Get the list separator
+		TCHAR szBuffer[10] = {0};
+		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SLIST, szBuffer, sizeof(szBuffer));
+
+		CString strSeparator = szBuffer;
+
+		// If none found, the the ';'
+		if (strSeparator.GetLength() == 0)
+			strSeparator = ';';
+
+		// Trim extra spaces
+		strSeparator.TrimRight();
+
+		// And one...
+		strSeparator += ' ';
+
+		for (INT i = 0; i < nCount; i++) {
+
+			if (GetItemData(i)) {
+				CString strItem;
+				GetLBText(i, strItem);
+
+				if (!strText.IsEmpty())
+					strText += strSeparator;
+
+				strText += strItem;
 			}
-	}		
-
-	//## CALL Parent
-	return CButton::WindowProc(message, wParam, lParam);
-}
-//## ====================================================================================
-BOOL CCheckComboBox::PreTranslateMessage(MSG* pMsg)
-{
-	//## INTERCEPT Keys => send them to tree
-	if ((pMsg->message >= WM_KEYFIRST) && (pMsg->message <= WM_KEYLAST))
-		if(m_pwndActiveDropDown){
-			m_pwndActiveDropDown->SendMessage( pMsg->message, pMsg->wParam, pMsg->lParam);
-			((CCheckTreeCtrl*)m_pwndActiveDropDown)->UpdateToState();
-			return FALSE;
 		}
 
-	//## PROCESS ToolTip
-	InitToolTip();
-	m_ToolTip.RelayEvent(pMsg);		
-	return CButton::PreTranslateMessage(pMsg);
-}
-//#######################################################################################
-void CCheckComboBox::DrawItem( LPDRAWITEMSTRUCT lpDrawItemStruct )
-{
-	//## GET CDC
-	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
+		// Set the text
+		m_strText = strText;
 
-	//## FRAME
-	CRect rc = lpDrawItemStruct->rcItem;
-	pDC->DrawEdge( rc, EDGE_SUNKEN, BF_TOP | BF_LEFT | BF_BOTTOM | BF_RIGHT );
-
-	//## DRAW white BK
-	rc.DeflateRect(2, 2);
-	static CBrush brWindow(GetSysColor(COLOR_WINDOW));
-	static CBrush brBtnFace(GetSysColor(COLOR_BTNFACE));
-	static CBrush brBtnShadow(GetSysColor(COLOR_BTNSHADOW));
-	if (IsWindowEnabled())
-			pDC->FillRect(&rc, &brWindow);
-	else	pDC->FillRect(&rc, &brBtnFace);
-
-	//## COMPUTE Button Rect
-	CRect rcButton = rc;
-	rcButton.left = rcButton.right - DROP_BUTTON_WIDTH;
-	if (rcButton.left < rc.left) rcButton.left = rc.left;
-
-	//## COMPUTE Caption Rect
-	CRect rcCaption = rc;
-	rcCaption.right = rcButton.left - 1;
-	if (rcCaption.right < rcCaption.left) rcCaption.right = rcCaption.left;
-
-	//## FOCUS
-	rcCaption.DeflateRect(1, 1);
-	if (lpDrawItemStruct->itemState & ODS_FOCUS) pDC->DrawFocusRect(rcCaption);
-	rcCaption.DeflateRect(2, 1);
-
-	//## GET Caption
-	CString strText;
-	GetWindowText(strText);
-
-	//## DRAW Caption
-	pDC->SetBkColor( (IsWindowEnabled()) ? GetSysColor(COLOR_WINDOW) : GetSysColor(COLOR_BTNFACE) );
-	COLORREF crOldColor = SetTextColor(lpDrawItemStruct->hDC, RGB(0, 0, 0));
-	DrawText(lpDrawItemStruct->hDC, strText, strText.GetLength(), &rcCaption, DT_SINGLELINE | DT_VCENTER );
-	SetTextColor(lpDrawItemStruct->hDC, crOldColor);
-
-	//## GET Button Style
-	UINT uStyle = DFCS_BUTTONPUSH;
-	if (lpDrawItemStruct->itemState & ODS_SELECTED) uStyle |= DFCS_PUSHED;
-
-	//## DRAW Button
-	if (lpDrawItemStruct->itemState & ODS_SELECTED){
-		pDC->FrameRect(rcButton, &brBtnShadow);
-		rcButton.DeflateRect(1, 1);
-		pDC->FillRect(&rcButton, &brBtnFace);
-		rcButton.DeflateRect(1, 3, 0, 0);
-	}else{
-		pDC->FrameRect(rcButton, &brBtnFace);
-		rcButton.DeflateRect(1, 1, 0, 0);
-		DrawFrameControl(lpDrawItemStruct->hDC, &rcButton, DFC_BUTTON, uStyle);
-	}
-
-	//## DRAW Arrow
-	static CPen penBlack(PS_SOLID, 1, RGB(0, 0, 0));
-	static CPen penBtnShadow(PS_SOLID, 1, GetSysColor(COLOR_BTNSHADOW));
-	CPen* ppenOld;
-	if (IsWindowEnabled())
-			ppenOld = pDC->SelectObject(&penBlack);
-	else	ppenOld = pDC->SelectObject(&penBtnShadow);
-	for(long i=0; i<4; i++){
-		pDC->MoveTo( rcButton.left + 3 + i, rcButton.top + rcButton.Height()/2 - 2 + i);
-		pDC->LineTo( rcButton.left + 3 + 7 - i, rcButton.top + rcButton.Height()/2 - 2 + i);
-		if (!IsWindowEnabled())
-			pDC->SetPixel(rcButton.left + 3 + 7 - i, rcButton.top + rcButton.Height()/2 - 2 + i + 1, 0xFFFFFF);
-	}
-	pDC->SelectObject(ppenOld);
-}
-//#######################################################################################
-void CCheckComboBox::AddString(LPCTSTR lpszString, long nID, long nLevel)
-{
-	//## IF is the first item => add root
-	if (m_Data.GetSize() == 0)
-		m_Data.AddString(lpszString, INVALID_ID, ROOT_LEVEL);
-
-	//## ADD
-	m_Data.AddString(lpszString, nID, nLevel);
-}
-//## ====================================================================================
-void CCheckComboBox::CheckAll(BOOL bCheck)
-{
-	m_Data.CheckAll(bCheck);
-	UpdateCaption();
-}
-//## ====================================================================================
-void CCheckComboBox::SetCheck(long nID, BOOL bCheck)
-{
-	m_Data.SetCheck(nID, bCheck);
-	UpdateCaption();
-}
-//## ====================================================================================
-BOOL CCheckComboBox::GetCheck(long nID)
-{
-	return m_Data.GetCheck(nID);
-}
-//## ====================================================================================
-int CCheckComboBox::GetCount()
-{
-	return m_Data.GetSize();
-}
-//## ====================================================================================
-CString CCheckComboBox::GetCheckedIDs()
-{
-	return m_Data.GetCheckedIDs();
-}
-CString	CCheckComboBox::GetCheckedTexts()
-{
-	return m_Data.GetCheckedTexts();
-}
-//## ====================================================================================
-void CCheckComboBox::UpdateCaption()
-{
-	//## CAPTION
-	CString str = m_Data.GetCheckedTexts();
-	SetWindowText(str);
-
-	//## ASSERT
-	if (!::IsWindow(m_ToolTip.m_hWnd)) InitToolTip();
-	if (!::IsWindow(m_ToolTip.m_hWnd)) return;
-
-	//## TOOLTIP
-	m_ToolTip.SetMaxTipWidth( TOOLTIP_MAX_WIDTH );
-	if (str.GetLength() > TOOLTIP_MAX_CHARACTERS)
-		str = str.Mid(0, (TOOLTIP_MAX_CHARACTERS-3)) + "...";
-	SetToolTipText( str );
-}
-//#######################################################################################
-void CCheckComboBox::SetImageList(CImageList *pimgList)
-{
-	//## SET ImageList
-	m_imgList.Create( pimgList );
-}
-//## ====================================================================================
-CImageList* CCheckComboBox::GetImageList()
-{
-	//## ASSERT
-	if ((HIMAGELIST)m_imgList) return &m_imgList;
-	return NULL;
-}
-//#######################################################################################
-void CCheckComboBox::ShowDropWnd()
-{
-	//## ASSERT
-	if (!m_pwndTree) CreateDropWnd();
-	if (!m_pwndTree) return;
-
-	//## PLACE Tree
-	PlaceDropWnd();
-
-	//## DROP
-	Drop( !IsDropped() );
-}
-//## ====================================================================================
-void CCheckComboBox::CreateDropWnd()
-{
-	//## ASSERT
-	if (m_pwndTree) return;
-
-	//## CREATE Tree
-	m_pwndTree = new CCheckTreeCtrl;
-	m_pwndTree->CreateEx(	WS_EX_LEFT | WS_EX_LTRREADING | WS_EX_RIGHTSCROLLBAR | WS_EX_TOOLWINDOW,
-							WS_CHILD | WS_BORDER |
-							WS_CLIPSIBLINGS | WS_OVERLAPPED |
-							TVS_HASBUTTONS | TVS_HASLINES | TVS_CHECKBOXES | TVS_DISABLEDRAGDROP |
-							TVS_SHOWSELALWAYS | TVS_FULLROWSELECT,
-							CRect(0, 0, 0, 0),
-							GetDesktopWindow(),
-							0x3E8);
-
-	//## MOVE on top
-	m_pwndTree->SetWindowPos(&CWnd::wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-
-	//## SET Parent
-	m_pwndTree->SetParentCombo( this );
-
-	//## ATTACH ImageList
-	if (GetImageList())
-		m_pwndTree->SetImageList( GetImageList(), TVSIL_NORMAL );
-
-	//## POPULATE
-	m_pwndTree->Populate();
-}
-//## ====================================================================================
-void CCheckComboBox::PlaceDropWnd()
-{
-	//## ASSERT
-	if (!m_pwndTree) CreateDropWnd();
-	if (!m_pwndTree) return;
-
-	//## GET ComboRect
-	CRect rc;
-	GetWindowRect(&rc);
-
-	//## MOVE Tree
-	m_pwndTree->MoveWindow(rc.left, rc.bottom, GetDroppedWidth(), DROPDOWN_HEIGHT);
-}
-//## ====================================================================================
-BOOL CCheckComboBox::IsDropped()
-{
-	//## ASSERT
-	if (!m_pwndTree) return FALSE;
-
-	//## RETURN
-	return ( m_pwndTree->IsWindowVisible() );
-}
-//## ====================================================================================
-void CCheckComboBox::Drop(BOOL bDrop)
-{
-	//## ASSERT
-	if (!m_pwndTree) return;
-
-	//## DROP/UNDROP
-	if (bDrop){
-		//## ASSERT
-		HideActiveDropDown();
-
-		//## INTERCEPT parent messages
-		if (!m_parentWndProc) InterceptParentWndProc();
-
-		//## STRANGE (I do not know why... but without an image list, the following lines are needed)
-		if (!(HIMAGELIST)m_imgList){
-			m_pwndTree->ShowWindow( SW_SHOW );
-			m_pwndTree->UpdateFromState();
-		}
-
-		//## UPDATE
-		m_pwndTree->UpdateFromState();
-
-		//## SHOW Window
-		m_pwndTree->ShowWindow( SW_SHOW );
-		m_pwndTree->SetFocus();
-
-		//## SET Active DropDown
-		m_pwndActiveDropDown = m_pwndTree;
-		m_pwndActiveCheckComboBox = this;
-
-		//## TOOLTIP
-		SetToolTipText( "" );
-
-		//## TO BE SURE (if our combo is in a FormView)
-		if (this->GetParent())
-			this->GetParent()->GetWindowRect( &m_rcParentRect );
-	}else{
-		//## ASSERT
-		HideActiveDropDown();
-
-		//## HIDE Window
-		m_pwndTree->ShowWindow( SW_HIDE );
-
-		//## CAPTION
-		UpdateCaption();
+		m_bTextUpdated = TRUE;
 	}
 }
-//## ====================================================================================
-void CCheckComboBox::HideActiveDropDown()
+
+INT CCheckComboBox::SetCheck(INT nIndex, BOOL bFlag)
 {
-	//## ASSERT
-	if (!m_pwndActiveDropDown) return;
+	INT nResult = SetItemData(nIndex, bFlag);
 
-	//## HIDE Window
-	m_pwndActiveDropDown->ShowWindow( SW_HIDE );
-	m_pwndActiveDropDown = NULL;
+	if (nResult < 0)
+		return nResult;
 
-	//## CAPTION
-	if (m_pwndActiveCheckComboBox){
-		m_pwndActiveCheckComboBox->UpdateCaption();
-		m_pwndActiveCheckComboBox = NULL;
-	}
+	// Signal that the text need updating
+	m_bTextUpdated = FALSE;
+
+	// Redraw the window
+	Invalidate(FALSE);
+
+	return nResult;
 }
-//#######################################################################################
-void CCheckComboBox::InterceptParentWndProc()
+
+BOOL CCheckComboBox::GetCheck(INT nIndex)
 {
-	//## ASSERT
-	if (m_parentWndProc) return;
-
-	//## ASSERT
-	CWnd *pwndParent = GetParent();
-	if (!pwndParent) return;
-	if (!pwndParent->GetSafeHwnd()) return;
-
-	//## GET Parent WinProc & SET our function
-	m_parentWndProc = (WNDPROC)::SetWindowLong(pwndParent->GetSafeHwnd(), GWL_WNDPROC, (long)(WNDPROC)ParentWindowProc);
+	return GetItemData(nIndex);
 }
-//## ====================================================================================
-void CCheckComboBox::UnInterceptParentWndProc()
-{
-	//## ASSERT
-	if (!m_parentWndProc) return;
 
-	//## ASSERT
-	CWnd *pwndParent = GetParent();
-	if (!pwndParent) return;
-	if (!pwndParent->GetSafeHwnd()) return;
 
-	//## SET Parent WinProc = UNINTERCEPT
-	(WNDPROC)::SetWindowLong(pwndParent->GetSafeHwnd(), GWL_WNDPROC, (long)(WNDPROC)m_parentWndProc);
-	m_parentWndProc = NULL;
-}
-//## ====================================================================================
-LRESULT CALLBACK CCheckComboBox::ParentWindowProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
-{
-	//## CHECK Message
-	switch (nMsg){
-		case WM_COMMAND:
-		case WM_SYSCOMMAND:
-		case WM_SYSKEYDOWN:
-		case WM_LBUTTONDOWN:
-		case WM_NCLBUTTONDOWN:
-		case WM_WINDOWPOSCHANGING:
-		case WM_WINDOWPOSCHANGED:
-			//## FILTER Messages
-			if (IsMsgOK(hWnd, nMsg,/* wParam,*/ lParam)) break;
-
-			//## HIDE Active DropDown
-			HideActiveDropDown();
-			break;
-		case WM_PAINT:
-			//## TO BE SURE (if our combo is in a FormView)
-			if (m_pwndActiveCheckComboBox)
-				if (m_pwndActiveCheckComboBox->GetParent()){
-					CRect rcParent;
-					m_pwndActiveCheckComboBox->GetParent()->GetWindowRect( &rcParent );
-					if ((rcParent.top != m_rcParentRect.top) || (rcParent.left != m_rcParentRect.left))
-						HideActiveDropDown();
-				}
-			break;
-	}
-
-	//## CALL Parent
-	if(!m_parentWndProc) return NULL;
-	return CallWindowProc( m_parentWndProc, hWnd, nMsg, wParam, lParam );
-}
-//## ====================================================================================
-BOOL CCheckComboBox::IsMsgOK(HWND hWnd, UINT nMsg, /*WPARAM wParam,*/ LPARAM lParam)
-{
-	//## ASSERT
-	if (!hWnd) return FALSE;
-	if (nMsg != WM_COMMAND) return FALSE;
-	if (!m_pwndActiveDropDown) return FALSE;
-	if ((HWND)lParam != m_pwndActiveCheckComboBox->GetSafeHwnd()) return FALSE;
-
-	//## GET DropDownRect
-	CRect rc;
-	m_pwndActiveCheckComboBox->GetWindowRect( rc );
-
-	//## GET MousePos
-	CPoint pt;
-	::GetCursorPos( &pt );
-
-	//## CHECK is in rect
-	if (pt.x < rc.left) return FALSE;
-	if (pt.x > rc.right) return FALSE;
-	if (pt.y < rc.top) return FALSE;
-	if (pt.y > rc.bottom) return FALSE;
-
-	//## FINALLY
-	return TRUE;
-}
-//## ====================================================================================
-UINT CCheckComboBox::OnGetDlgCode()
-{
-	return DLGC_WANTARROWS | DLGC_WANTCHARS | CButton::OnGetDlgCode();
-}
-//#######################################################################################
-void CCheckComboBox::OnKillFocus(CWnd* pNewWnd) 
-{
-	//## CALL Parent
-	CButton::OnKillFocus(pNewWnd);
-
-	//## HIDE Active DropDown
-	HideActiveDropDown();
-}
-//#######################################################################################
-void CCheckComboBox::InitToolTip()
-{
-	if (m_ToolTip.m_hWnd == NULL){
-		try{
-			m_ToolTip.Create(this);
-			m_ToolTip.Activate(FALSE);
-		}catch(...){};
-	}
-}
-//## ====================================================================================
-void CCheckComboBox::SetToolTipText(int nId, BOOL bActivate)
-{
-	//## LOAD String
-	CString strText;
-	strText.LoadString(nId);
-
-	//## SET Tooltip
-	if (strText.IsEmpty() == FALSE) SetToolTipText(strText, bActivate);
-}
-//## ====================================================================================
-void CCheckComboBox::SetToolTipText(CString strText, BOOL bActivate)
-{
-	//## INITIALIZE ToolTip
-	InitToolTip();
-
-	//## IF there is no tooltip defined then add it
-	if (m_ToolTip.GetToolCount() == 0)
-	{
-		CRect rectBtn; 
-		GetClientRect(rectBtn);
-		m_ToolTip.AddTool(this, (LPCTSTR)strText, rectBtn, 1);
-	}
-
-	//## SET text for tooltip
-	m_ToolTip.UpdateTipText((LPCTSTR)strText, this, 1);
-	m_ToolTip.Activate(bActivate);
-}
-//#######################################################################################
-long CCheckComboBox::GetDroppedWidth()
-{
-	//## ASSERT
-	if (m_nDroppedWidth != DROPPED_WIDTH_NOT_SET) return m_nDroppedWidth;
-	if (!m_hWnd) return DROPPED_WIDTH_NOT_SET;
-
-	//## GET ComboRect
-	CRect rc;
-	GetWindowRect(&rc);
-
-	//## SET, RETURN DroppedWidth
-	m_nDroppedWidth = rc.Width();
-	return m_nDroppedWidth;
-}
-//## ====================================================================================
-void CCheckComboBox::SetDroppedWidth(long nWidth)
-{
-	m_nDroppedWidth = nWidth;
-}
-//#######################################################################################

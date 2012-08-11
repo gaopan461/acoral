@@ -55,7 +55,6 @@ CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 void CToolTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_TEST, m_cboTest);
 }
 
 BEGIN_MESSAGE_MAP(CToolTestDlg, CDialog)
@@ -99,25 +98,13 @@ BOOL CToolTestDlg::OnInitDialog()
 	LoadPopConfig("ToolTestCfg.xml");
 	InitCommandMap();
 
-	m_cboTest.AddString("Level1");
-		m_cboTest.AddString("gp1",1,ROOT_INDEX+2);
-		m_cboTest.AddString("gp2",2,ROOT_INDEX+2);
-		m_cboTest.AddString("gp3",3,ROOT_INDEX+2);
-		m_cboTest.AddString("gp4",4,ROOT_INDEX+2);
-		m_cboTest.AddString("gp5",5,ROOT_INDEX+2);
-		m_cboTest.AddString("gp6",6,ROOT_INDEX+2);
-	m_cboTest.AddString("Level2");
-		m_cboTest.AddString("gp1",1,ROOT_INDEX+2);
-		m_cboTest.AddString("gp2",2,ROOT_INDEX+2);
-		m_cboTest.AddString("gp3",3,ROOT_INDEX+2);
-		m_cboTest.AddString("gp4",4,ROOT_INDEX+2);
-		m_cboTest.AddString("gp5",5,ROOT_INDEX+2);
-		m_cboTest.AddString("gp6",INVALID_ID,ROOT_INDEX+2);
-			m_cboTest.AddString("111",11,ROOT_INDEX+3);
-
-	CImageList imgList;
-	imgList.Create(IDB_TREE_ICON, 18, 1, RGB(0xFF, 0xFF, 0xFF));
-	m_cboTest.SetImageList(&imgList);
+	m_pCboTest1 = new CCheckComboBox();
+	m_pCboTest1->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(10,10,100,200), this, 1);
+	m_pCboTest1->AddString("gp1");
+	m_pCboTest1->AddString("gp2");
+	m_pCboTest1->AddString("gp3");
+	m_pCboTest1->AddString("gp4");
+	m_pCboTest1->AddString("gp5");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

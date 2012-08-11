@@ -193,14 +193,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\common\CheckCombo\CheckTreeCtrl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\common\CheckCombo\CheckTreeData.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\PopWindow.cpp"
 				>
 			</File>
@@ -240,14 +232,6 @@
 			>
 			<File
 				RelativePath="..\common\CheckCombo\CheckComboBox.h"
-				>
-			</File>
-			<File
-				RelativePath="..\common\CheckCombo\CheckTreeCtrl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\common\CheckCombo\CheckTreeData.h"
 				>
 			</File>
 			<File

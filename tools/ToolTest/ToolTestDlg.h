@@ -4,6 +4,9 @@
 #pragma once
 #include "checkcombobox.h"
 #include "PopWindow.h"
+#include "checkcombobox.h"
+#include "e:\gaopanstudy\acoral\tools\common\checkcombo\checkcombobox.h"
+#include "e:\gaopanstudy\acoral\tools\common\checkcombo\checkcombobox.h"
 
 
 // CToolTestDlg ¶Ô»°¿ò
@@ -33,6 +36,5 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	void InitCommandMap();
-public:
-	CCheckComboBox m_cboTest;
+	CCheckComboBox* m_pCboTest1;
 };
