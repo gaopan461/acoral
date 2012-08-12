@@ -22,6 +22,7 @@
 #define POP_STYLE_PARAM_COMCHECKBOX		2	//组合复选框
 
 #define DEFAULT_HEIGHT					20		//控件默认高度
+#define DEFAULT_HEIGHT_INTER			5		//控件纵向间隔
 #define MAIN_DEFAULT_WIDTH				"100"	//主控件默认宽度
 #define PARAM_DEFAULT_WIDTH				"100"	//参数文本控件默认宽度
 #define PARAM_DEFAULT_WIDTH1			"100"	//参数控件默认高度

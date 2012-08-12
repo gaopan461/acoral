@@ -19,7 +19,7 @@ bool ValidPopMainStyle(const CString& style)
 
 bool ValidPopParamStyle(const CString& style)
 {
-	if(style == "edit" || style == "combox" || style == "comcheckbox")
+	if(style == "edit" || style == "combobox" || style == "comcheckbox")
 		return true;
 	else
 		return false;
@@ -59,16 +59,72 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 	ASSERT(pMainInfo);
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE;
 	if(pMainInfo->m_strDlgStyle == "radio")
-		dwStyle |= BS_RADIOBUTTON | BS_AUTORADIOBUTTON;
+		dwStyle |= BS_AUTORADIOBUTTON;
 	else if(pMainInfo->m_strDlgStyle == "checkbox")
-		dwStyle |= BS_CHECKBOX | BS_AUTOCHECKBOX;
+		dwStyle |= BS_AUTOCHECKBOX;
 
 	CButton* pMainCtrl = new CButton();
-	pMainCtrl->Create(NULL,dwStyle,CRect(pMainInfo->m_nStartWidth,pMainInfo->m_nStartHeight,pMainInfo->m_nStartWidth+pMainInfo->m_nWidth,pMainInfo->m_nStartHeight+20),this,m_nId++);
+	pMainCtrl->Create(pMainInfo->m_strName.c_str(),dwStyle,CRect(pMainInfo->m_nStartWidth,pMainInfo->m_nStartHeight,pMainInfo->m_nStartWidth+pMainInfo->m_nWidth,pMainInfo->m_nStartHeight+20),this,m_nId++);
 	m_vtWnds.push_back((CWnd*)pMainCtrl);
 	SPopItem* pPopItem = new SPopItem();
 	pPopItem->m_pMainWnd = (CWnd*)pMainCtrl;
 	pPopItem->m_pMainInfo = pMainInfo;
+
+	for(std::vector<SPopControlParamInfo*>::iterator paramIter = pMainInfo->m_vtParams.begin();
+		paramIter != pMainInfo->m_vtParams.end();
+		paramIter++)
+	{
+		CWnd* pParamWnd = NULL;
+		SPopControlParamInfo* pParamInfo = *paramIter;
+		int nNameL,nNameT,nNameR,nNameB;
+		int nCtrlL,nCtrlT,nCtrlR,nCtrlB;
+		nNameL = pParamInfo->m_nStartWidth;
+		nNameT = pParamInfo->m_nStartHeight;
+		nNameR = nNameL + pParamInfo->m_nWidth;
+		nNameB = nNameT + DEFAULT_HEIGHT;
+		nCtrlL = nNameR;
+		nCtrlT = nNameT;
+		nCtrlR = nCtrlL + pParamInfo->m_nWidth1;
+		nCtrlB = nNameB;
+
+		CStatic* pParamNameWnd = new CStatic();
+		pParamNameWnd->Create(pParamInfo->m_strName.c_str(),WS_CHILD|WS_VISIBLE,CRect(nNameL,nNameT,nNameR,nNameB),this,m_nId++);
+		pPopItem->m_vtParamWnds.push_back(pParamNameWnd);
+
+		if(pParamInfo->m_strDlgStyle == "edit")
+		{
+			pParamWnd = new CEdit();
+			pParamWnd->Create("Edit",NULL,WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER,CRect(nCtrlL,nCtrlT,nCtrlR,nCtrlB),this,m_nId++);
+		}
+		else if(pParamInfo->m_strDlgStyle == "combobox")
+		{
+			nCtrlB += pParamInfo->m_mapValue.size() * DEFAULT_HEIGHT;
+			pParamWnd = new CComboBox();
+			pParamWnd->Create("ComboBox",NULL,WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(nCtrlL,nCtrlT,nCtrlR,nCtrlB),this,m_nId++);
+			for (std::map<std::string,std::string>::iterator itemIter = pParamInfo->m_mapValue.begin();
+				itemIter != pParamInfo->m_mapValue.end();
+				itemIter++)
+			{
+				((CComboBox*)pParamWnd)->AddString(itemIter->first.c_str());
+			}
+		}
+		else if(pParamInfo->m_strDlgStyle == "comcheckbox")
+		{
+			nCtrlB += pParamInfo->m_mapValue.size() * DEFAULT_HEIGHT;
+			CCheckComboBox* pCheckComboBox = new CCheckComboBox();
+			pCheckComboBox->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(nCtrlL,nCtrlT,nCtrlR,nCtrlB), this, m_nId++);
+			pParamWnd = pCheckComboBox;
+			for (std::map<std::string,std::string>::iterator itemIter = pParamInfo->m_mapValue.begin();
+				itemIter != pParamInfo->m_mapValue.end();
+				itemIter++)
+			{
+				((CCheckComboBox*)pParamWnd)->AddString(itemIter->first.c_str());
+			}
+		}
+
+		pPopItem->m_vtParamWnds.push_back(pParamWnd);
+		pPopItem->m_mapParamInfos.insert(std::make_pair(pParamWnd->GetSafeHwnd(),pParamInfo));
+	}
 	m_vtPopItems.push_back(pPopItem);
 }
 
@@ -143,9 +199,9 @@ bool LoadPopConfig(std::string name)
 		CollectionPopControlInfosT vtPopControlInfos;
 		vtPopControlInfos.clear();
 		int startHeight = 0;
+		int startWidth = 0;
 		for(rapidxml::xml_node<>* mainItem = propertyNode->first_node("item"); mainItem != NULL; mainItem = mainItem->next_sibling("item"))
 		{
-			int startWidth = 0;
 			SPopControlMainInfo* mainInfo = new SPopControlMainInfo();
 
 			rapidxml::xml_node<>* nodeM;
@@ -232,7 +288,13 @@ bool LoadPopConfig(std::string name)
 				paramInfo->m_nStartHeight= startHeight;
 				mainInfo->m_vtParams.push_back(paramInfo);
 			}
-			startHeight = startHeight + DEFAULT_HEIGHT;
+
+			if((!mainInfo->m_vtParams.empty()) || (!mainInfo->m_bNonewline))
+			{
+				startWidth = 0;
+				startHeight += DEFAULT_HEIGHT + DEFAULT_HEIGHT_INTER;
+			}
+
 			vtPopControlInfos.push_back(mainInfo);
 		}
 		g_mapPopInfos.insert(std::make_pair(propertyName,vtPopControlInfos));

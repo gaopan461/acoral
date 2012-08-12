@@ -7,14 +7,12 @@
 			<value> 0 </value>
 			<checked> 1 </checked>
 			<nonewline> 1 </nonewline>
-			<width> 200 </width>
 		</item>
 		<item>
 			<dlgStyle> radio </dlgStyle>
 			<name> 2:测试2 </name>
 			<value> 1 </value>
 			<nonewline> 1 </nonewline>
-			<width> 100 </width>
 		</item>
 		<item>
 			<dlgStyle> radio </dlgStyle>
@@ -30,10 +28,9 @@
 			<value> 0 </value>
 			<checked> 1 </checked>
 			<nonewline> 1 </nonewline>
-			<width> 200 </width>
 			<descr> 注释 </descr>
 			<param>
-				<dlgStyle> combox 
+				<dlgStyle> combobox
 					<item>
 						<name> 高攀1 </name>
 						<value> 0 </value>
@@ -46,14 +43,37 @@
 						<name> 高攀3 </name>
 						<value> 2 </value>
 					</item>
+					<item>
+						<name> 高攀4 </name>
+						<value> 3 </value>
+					</item>
+					<item>
+						<name> 高攀5 </name>
+						<value> 4 </value>
+					</item>
+					<item>
+						<name> 高攀6 </name>
+						<value> 5 </value>
+					</item>
+					<item>
+						<name> 高攀7 </name>
+						<value> 6 </value>
+					</item>
+					<item>
+						<name> 高攀8 </name>
+						<value> 7 </value>
+					</item>
+					<item>
+						<name> 高攀9 </name>
+						<value> 8 </value>
+					</item>
 				</dlgStyle>
 				<name> 参数1 </name>
 				<cname> param1 </cname>
 				<reverse> bool </reverse>
 				<default> 高攀1 </default>
 				<descr> 参数注释1 </descr>
-				<width> 200 </width>
-				<width1> 200 </width1>
+				<width> 50 </width>
 			</param>
 			<param>
 				<dlgStyle> comcheckbox 
@@ -70,6 +90,7 @@
 				<cname> param2 </cname>
 				<default> 美艳2 </default>
 				<descr> 参数注释2 </descr>
+				<width> 50 </width>
 			</param>
 			<param>
 				<dlgStyle> edit </dlgStyle>
@@ -77,6 +98,7 @@
 				<cname> param3 </cname>
 				<default> 王芬 </default>
 				<descr> 参数注释3 </descr>
+				<width> 50 </width>
 			</param>
 		</item>
 		<item>
@@ -84,13 +106,13 @@
 			<name> 2:测试2 </name>
 			<value> 1 </value>
 			<nonewline> 1 </nonewline>
-			<width> 100 </width>
 			<param>
 				<dlgStyle> edit </dlgStyle>
 				<name> 参数1 </name>
 				<cname> param1 </cname>
 				<default> 王芬 </default>
 				<descr> 参数注释1 </descr>
+				<width> 50 </width>
 			</param>
 		</item>
 		<item>
