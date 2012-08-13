@@ -163,9 +163,40 @@ BOOL CPopWindow::Show()
 	return TRUE;
 }
 
+int CPopWindow::WritePopDataToOrigin()
+{
+	if(!m_pOriginWnd)
+		return -1;
+
+	DWORD originId = m_pOriginWnd->GetDlgCtrlID();
+	if(g_mapOriginInfos.find(originId) == g_mapOriginInfos.end())
+		return -1;
+
+	int dlgStyle = g_mapOriginInfos[originId].m_nDlgStyle;
+	if(dlgStyle == ORIGIN_STYLE_EDITRADIO)
+	{
+		if(m_vtPopItems.empty() || m_vtPopItems[0]->m_pMainInfo->m_strDlgStyle != "radio")
+			return -1;
+
+		for(std::vector<SPopItem*>::iterator mainItem = m_vtPopItems.begin(); mainItem != m_vtPopItems.end(); mainItem++)
+		{
+			CButton* mainCtrl = (CButton*)((*mainItem)->m_pMainWnd);
+			if(mainCtrl->GetCheck() == 1)
+			{
+				CString text = (*mainItem)->m_pMainInfo->m_strName.c_str();
+				((CEdit*)m_pOriginWnd)->SetWindowText(text.GetBuffer());
+				return 0;
+			}
+		}
+	}
+
+	return 0;
+}
+
 // CPopWindow 消息处理程序
 afx_msg void CPopWindow::OnClose()
 {
+	WritePopDataToOrigin();
 	CDialog::OnClose();
 }
 
@@ -202,10 +233,9 @@ bool LoadPopConfig(std::string name)
 		vtPopControlInfos.clear();
 		int startHeight = 0;
 		int startWidth = 0;
+		CString dlgStyle = "UNKNOWN";
 		for(rapidxml::xml_node<>* mainItem = propertyNode->first_node("item"); mainItem != NULL; mainItem = mainItem->next_sibling("item"))
 		{
-			SPopControlMainInfo* mainInfo = new SPopControlMainInfo();
-
 			rapidxml::xml_node<>* nodeM;
 			nodeM				= mainItem->first_node("dlgStyle");
 			if(!nodeM)
@@ -214,6 +244,15 @@ bool LoadPopConfig(std::string name)
 			CString dlgStyleM	= nodeM->value();					dlgStyleM.Trim();
 			if(!ValidPopMainStyle(dlgStyleM))
 				continue;
+
+			if(dlgStyle == "UNKNOWN")
+				dlgStyle = dlgStyleM;
+
+			if(dlgStyle != dlgStyleM)
+				continue;
+
+			SPopControlMainInfo* mainInfo = new SPopControlMainInfo();
+
 			mainInfo->m_strDlgStyle = dlgStyleM.GetBuffer();
 
 			nodeM				= mainItem->first_node("name");

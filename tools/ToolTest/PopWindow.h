@@ -86,6 +86,7 @@ public:
 	void SetOrigin(CWnd* pWnd);
 	BOOL Show();
 	void CreatePopMain(SPopControlMainInfo* pMainInfo);
+	int WritePopDataToOrigin();
 private:
 	int m_nId;
 	CWnd* m_pOriginWnd;								//Ô­Ê¼¿Ø¼þ
