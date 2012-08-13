@@ -49,13 +49,18 @@ END_MESSAGE_MAP()
 CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CToolTestDlg::IDD, pParent)
 {
+	//_CrtSetBreakAlloc(229);
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+}
+
+CToolTestDlg::~CToolTestDlg()
+{
+	UnloadPopConfig();
 }
 
 void CToolTestDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_LIST1, m_test1);
 }
 
 BEGIN_MESSAGE_MAP(CToolTestDlg, CDialog)
@@ -98,14 +103,6 @@ BOOL CToolTestDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	LoadPopConfig("ToolTestCfg.xml");
 	InitCommandMap();
-
-	m_pCboTest1 = new CCheckComboBox();
-	m_pCboTest1->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(10,10,100,200), this, 1);
-	m_pCboTest1->AddString("gp1");
-	m_pCboTest1->AddString("gp2");
-	m_pCboTest1->AddString("gp3");
-	m_pCboTest1->AddString("gp4");
-	m_pCboTest1->AddString("gp5");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

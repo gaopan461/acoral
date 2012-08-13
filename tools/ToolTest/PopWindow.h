@@ -163,6 +163,7 @@ extern CollectionPopInfosT g_mapPopInfos;
 //===================================================================================
 //ÔØÈëxmlÎÄ¼þ
 bool LoadPopConfig(std::string name);
+void UnloadPopConfig();
 
 #define DECLARE_NO(ISWRITETODB,DLGID,NAME) DeclareNo(L,ISWRITETODB,DLGID,NAME)
 #define DECLARE_SOURCE_LISTBOX_DEFTYPE(ISWRITETODB,DLGID,NAME) DeclareSourceListBoxDefType(L,ISWRITETODB,DLGID,NAME)

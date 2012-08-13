@@ -14,6 +14,7 @@ class CToolTestDlg : public CDialog
 // 构造
 public:
 	CToolTestDlg(CWnd* pParent = NULL);	// 标准构造函数
+	virtual ~CToolTestDlg();
 
 // 对话框数据
 	enum { IDD = IDD_TOOLTEST_DIALOG };
@@ -34,6 +35,5 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	void InitCommandMap();
-	CCheckComboBox* m_pCboTest1;
 	CListBox m_test1;
 };

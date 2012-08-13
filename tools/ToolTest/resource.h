@@ -8,12 +8,9 @@
 #define IDD_TOOLTEST_DIALOG             102
 #define IDR_MAINFRAME                   128
 #define IDB_TREE_ICON                   130
-#define IDD_DIALOG1                     131
 #define IDD_POP                         131
-#define IDC_TEST                        1000
 #define IDC_NAME                        1006
 #define IDC_LIST1                       1007
-#define IDC_CHECK1                      1008
 
 // Next default values for new objects
 // 

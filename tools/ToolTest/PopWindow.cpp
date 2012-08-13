@@ -65,9 +65,9 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 
 	CButton* pMainCtrl = new CButton();
 	pMainCtrl->Create(pMainInfo->m_strName.c_str(),dwStyle,CRect(pMainInfo->m_nStartWidth,pMainInfo->m_nStartHeight,pMainInfo->m_nStartWidth+pMainInfo->m_nWidth,pMainInfo->m_nStartHeight+20),this,m_nId++);
-	m_vtWnds.push_back((CWnd*)pMainCtrl);
+	m_vtWnds.push_back(pMainCtrl);
 	SPopItem* pPopItem = new SPopItem();
-	pPopItem->m_pMainWnd = (CWnd*)pMainCtrl;
+	pPopItem->m_pMainWnd = pMainCtrl;
 	pPopItem->m_pMainInfo = pMainInfo;
 
 	for(std::vector<SPopControlParamInfo*>::iterator paramIter = pMainInfo->m_vtParams.begin();
@@ -89,6 +89,7 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 
 		CStatic* pParamNameWnd = new CStatic();
 		pParamNameWnd->Create(pParamInfo->m_strName.c_str(),WS_CHILD|WS_VISIBLE,CRect(nNameL,nNameT,nNameR,nNameB),this,m_nId++);
+		m_vtWnds.push_back(pParamNameWnd);
 		pPopItem->m_vtParamWnds.push_back(pParamNameWnd);
 
 		if(pParamInfo->m_strDlgStyle == "edit")
@@ -122,6 +123,7 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 			}
 		}
 
+		m_vtWnds.push_back(pParamWnd);
 		pPopItem->m_vtParamWnds.push_back(pParamWnd);
 		pPopItem->m_mapParamInfos.insert(std::make_pair(pParamWnd->GetSafeHwnd(),pParamInfo));
 	}
@@ -301,6 +303,23 @@ bool LoadPopConfig(std::string name)
 	}
 
 	return true;
+}
+
+void UnloadPopConfig()
+{
+	for(CollectionPopInfosT::iterator iterPop = g_mapPopInfos.begin(); iterPop != g_mapPopInfos.end(); iterPop++)
+	{
+		for(CollectionPopControlInfosT::iterator iterPopCtrl = iterPop->second.begin(); iterPopCtrl != iterPop->second.end(); iterPopCtrl++)
+		{
+			for(std::vector<SPopControlParamInfo*>::iterator iterPopParamCtrl = (*iterPopCtrl)->m_vtParams.begin(); iterPopParamCtrl != (*iterPopCtrl)->m_vtParams.end(); iterPopParamCtrl++)
+				delete (*iterPopParamCtrl);
+			
+			(*iterPopCtrl)->m_vtParams.clear();
+			delete (*iterPopCtrl);
+		}
+		iterPop->second.clear();
+	}
+	g_mapPopInfos.clear();
 }
 
 void DeclareNo(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
