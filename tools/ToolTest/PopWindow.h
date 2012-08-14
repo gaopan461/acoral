@@ -89,7 +89,13 @@ private:
 	void CreatePopMain(SPopControlMainInfo* pMainInfo);
 	int UpdateOriginToPop();
 	int WritePopToOrigin();
-	int GetPopText(std::vector<CString>& vtText);
+private:
+	typedef std::vector<CString> CollectionParamValuesT;
+	typedef std::vector<std::pair<CString,CollectionParamValuesT>> CollectionParamTextsT;
+	typedef std::map<CString,CollectionParamTextsT> CollectionMainTextsT;
+private:
+	int OriginToMidData(CollectionMainTextsT& mapData);
+	int PopToMidData(std::vector<CString>& vtData);
 private:
 	int m_nId;
 	CWnd* m_pOriginWnd;								//Ô­Ê¼¿Ø¼þ

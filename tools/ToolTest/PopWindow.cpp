@@ -171,35 +171,109 @@ BOOL CPopWindow::Show()
 	return TRUE;
 }
 
-int CPopWindow::UpdateOriginToPop()
+int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 {
-	if(!m_pOriginWnd)
-		return -1;
-
 	DWORD originId = m_pOriginWnd->GetDlgCtrlID();
 	if(g_mapOriginInfos.find(originId) == g_mapOriginInfos.end())
 		return -1;
 
 	int originDlgStyle = g_mapOriginInfos[originId].m_nDlgStyle;
-
-	std::vector<CString> vtText;
+	mapData.clear();
+	std::vector<CString> vtItems;
 	switch(originDlgStyle)
 	{
 	case ORIGIN_STYLE_EDITRADIO:
 	case ORIGIN_STYLE_EDITTUPLE:
 		{
-			CString text;
-			m_pOriginWnd->GetWindowText(text);
+			CString originText;
+			((CEdit*)m_pOriginWnd)->GetWindowText(originText);
+
+			CString itemText;
+			int itemPos = 0;
+			//每一行控件通过|隔开
+			itemText = originText.Tokenize(_T("|"),itemPos);
+			while (itemText != _T(""))
+			{
+				vtItems.push_back(itemText);
+				itemText = originText.Tokenize(_T("|"), itemPos);
+			};
 		}
 		break;
 	case ORIGIN_STYLE_LISTBOX:
-		{}
+		{
+
+		}
 		break;
+	}
+
+	for(std::vector<CString>::iterator iterItem = vtItems.begin(); iterItem != vtItems.end(); iterItem++)
+	{
+		CollectionParamTextsT vtParamTexts;
+		vtParamTexts.clear();
+
+		//主控件和参数控件通过:隔开
+		int mainPos = iterItem->FindOneOf(":");
+		if(mainPos != -1)
+		{
+			CString mainText = iterItem->Left(mainPos);
+			CString paramsText = iterItem->Mid(mainPos + 1);
+
+			CString paramText;
+			int paramPos = 0;
+			//参数控件之间通过,隔开
+			paramText = paramsText.Tokenize(_T(","),paramPos);
+			while(paramText != _T(""))
+			{
+				CollectionParamValuesT vtParamValues;
+				vtParamValues.clear();
+
+				//参数名和参数值通过=隔开
+				int paramNamePos = paramText.FindOneOf("=");
+				if(paramNamePos != -1)
+				{
+					CString paramName = paramText.Left(paramNamePos);
+					CString paramValues = paramText.Mid(paramNamePos + 1);
+
+					CString paramValue;
+					int paramValuePos = 0;
+					//参数的多个值通过`隔开
+					paramValue = paramValues.Tokenize(_T("`"),paramValuePos);
+					while(paramValue != _T(""))
+					{
+						vtParamValues.push_back(paramValue);
+						paramValue = paramValues.Tokenize(_T("`"),paramValuePos);
+					}
+
+					vtParamTexts.push_back(std::make_pair(paramName,vtParamValues));
+				}
+				else
+					vtParamTexts.push_back(std::make_pair(paramText,vtParamValues));
+
+				paramText = paramsText.Tokenize(_T(","),paramPos);
+			}
+
+			mapData.insert(std::make_pair(mainText,vtParamTexts));
+		}
+		else
+			mapData.insert(std::make_pair(*iterItem,vtParamTexts));
+
 	}
 	return 0;
 }
 
-int CPopWindow::GetPopText(std::vector<CString>& vtText)
+int CPopWindow::UpdateOriginToPop()
+{
+	if(!m_pOriginWnd)
+		return -1;
+
+	CollectionMainTextsT mapData;
+	if(OriginToMidData(mapData) != 0)
+		return -1;
+
+	return 0;
+}
+
+int CPopWindow::PopToMidData(std::vector<CString>& vtData)
 {
 	for(std::vector<SPopItem*>::iterator mainItem = m_vtPopItems.begin(); mainItem != m_vtPopItems.end(); mainItem++)
 	{
@@ -222,7 +296,7 @@ int CPopWindow::GetPopText(std::vector<CString>& vtText)
 				text = text + "=" + paramVal;
 			}
 
-			vtText.push_back(text);
+			vtData.push_back(text);
 		}
 	}
 
@@ -239,17 +313,17 @@ int CPopWindow::WritePopToOrigin()
 		return -1;
 
 	int originDlgStyle = g_mapOriginInfos[originId].m_nDlgStyle;
-	std::vector<CString> vtText;
-	GetPopText(vtText);
+	std::vector<CString> vtData;
+	PopToMidData(vtData);
 	switch(originDlgStyle)
 	{
 	case ORIGIN_STYLE_EDITRADIO:
 	case ORIGIN_STYLE_EDITTUPLE:
 		{
 			CString text = "";
-			for(std::vector<CString>::iterator iter = vtText.begin(); iter != vtText.end(); iter++)
+			for(std::vector<CString>::iterator iter = vtData.begin(); iter != vtData.end(); iter++)
 			{
-				if(iter != vtText.begin())
+				if(iter != vtData.begin())
 					text = text + "|";
 
 				text = text + iter->GetBuffer();
@@ -260,7 +334,7 @@ int CPopWindow::WritePopToOrigin()
 	case ORIGIN_STYLE_LISTBOX:
 		{
 			((CListBox*)m_pOriginWnd)->ResetContent();
-			for(std::vector<CString>::iterator iter = vtText.begin(); iter != vtText.end(); iter++)
+			for(std::vector<CString>::iterator iter = vtData.begin(); iter != vtData.end(); iter++)
 				((CListBox*)m_pOriginWnd)->InsertString(-1,iter->GetBuffer());
 		}
 		break;
