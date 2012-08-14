@@ -2,29 +2,71 @@
 <root>
 	<testRadio>
 		<item>
-			<dlgStyle> radio </dlgStyle>
-			<name> 1:测试1 </name>
+			<dlgStyle> checkbox </dlgStyle>
+			<name> 测试1 </name>
 			<value> 0 </value>
 			<checked> 1 </checked>
-			<nonewline> 1 </nonewline>
 		</item>
 		<item>
-			<dlgStyle> radio </dlgStyle>
-			<name> 2:测试2 </name>
+			<dlgStyle> checkbox </dlgStyle>
+			<name> 测试2 </name>
 			<value> 1 </value>
-			<nonewline> 1 </nonewline>
 		</item>
 		<item>
-			<dlgStyle> radio </dlgStyle>
-			<name> 3:测试3 </name>
+			<dlgStyle> checkbox </dlgStyle>
+			<name> 测试3 </name>
 			<value> 2 </value>
+			<param>
+				<dlgStyle> combobox
+					<item>
+						<name> 高攀1 </name>
+						<value> 0 </value>
+					</item>
+					<item>
+						<name> 高攀2 </name>
+						<value> 1 </value>
+					</item>
+					<item>
+						<name> 高攀3 </name>
+						<value> 2 </value>
+					</item>
+				</dlgStyle>
+				<name> 参数1 </name>
+				<cname> param1 </cname>
+				<reverse> bool </reverse>
+				<default> 高攀1 </default>
+				<descr> 参数注释1 </descr>
+				<width> 50 </width>
+			</param>
+			<param>
+				<dlgStyle> comcheckbox
+					<item>
+						<name> gp1 </name>
+						<value> 0 </value>
+					</item>
+					<item>
+						<name> gp2 </name>
+						<value> 1 </value>
+					</item>
+					<item>
+						<name> gp3 </name>
+						<value> 2 </value>
+					</item>
+				</dlgStyle>
+				<name> 参数2 </name>
+				<cname> param2 </cname>
+				<reverse> bool </reverse>
+				<default> gp1 </default>
+				<descr> 参数注释2 </descr>
+				<width> 50 </width>
+			</param>
 		</item>
 	</testRadio>
 	
 	<testCheck>
 		<item>
-			<dlgStyle> checkbox </dlgStyle>
-			<name> 1:测试1 </name>
+			<dlgStyle> radio </dlgStyle>
+			<name> 测试1 </name>
 			<value> 0 </value>
 			<checked> 1 </checked>
 			<nonewline> 1 </nonewline>
@@ -102,8 +144,13 @@
 			</param>
 		</item>
 		<item>
-			<dlgStyle> checkbox </dlgStyle>
-			<name> 2:测试2 </name>
+			<dlgStyle> static </dlgStyle>
+			<name> -------------------gaopan-------------------- </name>
+			<width> 1200 </width>
+		</item>
+		<item>
+			<dlgStyle> radio </dlgStyle>
+			<name> 测试2 </name>
 			<value> 1 </value>
 			<nonewline> 1 </nonewline>
 			<param>
@@ -116,8 +163,8 @@
 			</param>
 		</item>
 		<item>
-			<dlgStyle> checkbox </dlgStyle>
-			<name> 3:测试3 </name>
+			<dlgStyle> radio </dlgStyle>
+			<name> 测试3 </name>
 			<value> 2 </value>
 		</item>
 	</testCheck>

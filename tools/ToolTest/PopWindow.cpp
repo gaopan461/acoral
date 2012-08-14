@@ -11,7 +11,7 @@
 
 bool ValidPopMainStyle(const CString& style)
 {
-	if(style == "radio" || style == "checkbox")
+	if(style == "radio" || style == "checkbox" || style == "static")
 		return true;
 	else
 		return false;
@@ -57,6 +57,14 @@ void CPopWindow::DoDataExchange(CDataExchange* pDX)
 void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 {
 	ASSERT(pMainInfo);
+	if(pMainInfo->m_strDlgStyle == "static")
+	{
+		CStatic* pStatic = new CStatic();
+		pStatic->Create(pMainInfo->m_strName.c_str(),WS_CHILD|WS_VISIBLE,CRect(pMainInfo->m_nStartWidth,pMainInfo->m_nStartHeight,pMainInfo->m_nStartWidth + pMainInfo->m_nWidth,pMainInfo->m_nStartHeight + pMainInfo->m_nHeight),this,m_nId++);
+		m_vtWnds.push_back(pStatic);
+		return;
+	}
+
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE;
 	if(pMainInfo->m_strDlgStyle == "radio")
 		dwStyle |= BS_AUTORADIOBUTTON;
@@ -90,7 +98,6 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 		CStatic* pParamNameWnd = new CStatic();
 		pParamNameWnd->Create(pParamInfo->m_strName.c_str(),WS_CHILD|WS_VISIBLE,CRect(nNameL,nNameT,nNameR,nNameB),this,m_nId++);
 		m_vtWnds.push_back(pParamNameWnd);
-		pPopItem->m_vtParamWnds.push_back(pParamNameWnd);
 
 		if(pParamInfo->m_strDlgStyle == "edit")
 		{
@@ -124,8 +131,7 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 		}
 
 		m_vtWnds.push_back(pParamWnd);
-		pPopItem->m_vtParamWnds.push_back(pParamWnd);
-		pPopItem->m_mapParamInfos.insert(std::make_pair(pParamWnd->GetSafeHwnd(),pParamInfo));
+		pPopItem->m_mapParamInfos.insert(std::make_pair(pParamWnd,pParamInfo));
 	}
 	m_vtPopItems.push_back(pPopItem);
 }
@@ -163,6 +169,36 @@ BOOL CPopWindow::Show()
 	return TRUE;
 }
 
+int CPopWindow::GetPopText(std::vector<CString>& vtText)
+{
+	for(std::vector<SPopItem*>::iterator mainItem = m_vtPopItems.begin(); mainItem != m_vtPopItems.end(); mainItem++)
+	{
+		if(((CButton*)((*mainItem)->m_pMainWnd))->GetCheck() == 1)
+		{
+			CString text = (*mainItem)->m_pMainInfo->m_strName.c_str();
+			if(!(*mainItem)->m_mapParamInfos.empty())
+				text = text + ":";
+
+			for(std::map<CWnd*,SPopControlParamInfo*>::iterator paramItem = (*mainItem)->m_mapParamInfos.begin(); 
+				paramItem != (*mainItem)->m_mapParamInfos.end(); 
+				paramItem++)
+			{
+				if(paramItem != (*mainItem)->m_mapParamInfos.begin())
+					text = text + ",";
+
+				text = text + paramItem->second->m_strName.c_str();
+				CString paramVal;
+				paramItem->first->GetWindowText(paramVal);
+				text = text + "=" + paramVal;
+			}
+
+			vtText.push_back(text);
+		}
+	}
+
+	return 0;
+}
+
 int CPopWindow::WritePopDataToOrigin()
 {
 	if(!m_pOriginWnd)
@@ -172,22 +208,32 @@ int CPopWindow::WritePopDataToOrigin()
 	if(g_mapOriginInfos.find(originId) == g_mapOriginInfos.end())
 		return -1;
 
-	int dlgStyle = g_mapOriginInfos[originId].m_nDlgStyle;
-	if(dlgStyle == ORIGIN_STYLE_EDITRADIO)
+	int originDlgStyle = g_mapOriginInfos[originId].m_nDlgStyle;
+	std::vector<CString> vtText;
+	GetPopText(vtText);
+	switch(originDlgStyle)
 	{
-		if(m_vtPopItems.empty() || m_vtPopItems[0]->m_pMainInfo->m_strDlgStyle != "radio")
-			return -1;
-
-		for(std::vector<SPopItem*>::iterator mainItem = m_vtPopItems.begin(); mainItem != m_vtPopItems.end(); mainItem++)
+	case ORIGIN_STYLE_EDITRADIO:
+	case ORIGIN_STYLE_EDITTUPLE:
 		{
-			CButton* mainCtrl = (CButton*)((*mainItem)->m_pMainWnd);
-			if(mainCtrl->GetCheck() == 1)
+			CString text = "";
+			for(std::vector<CString>::iterator iter = vtText.begin(); iter != vtText.end(); iter++)
 			{
-				CString text = (*mainItem)->m_pMainInfo->m_strName.c_str();
-				((CEdit*)m_pOriginWnd)->SetWindowText(text.GetBuffer());
-				return 0;
+				if(iter != vtText.begin())
+					text = text + "|";
+
+				text = text + iter->GetBuffer();
 			}
+			((CEdit*)m_pOriginWnd)->SetWindowText(text.GetBuffer());
 		}
+		break;
+	case ORIGIN_STYLE_LISTBOX:
+		{
+			((CListBox*)m_pOriginWnd)->ResetContent();
+			for(std::vector<CString>::iterator iter = vtText.begin(); iter != vtText.end(); iter++)
+				((CListBox*)m_pOriginWnd)->AddString(iter->GetBuffer());
+		}
+		break;
 	}
 
 	return 0;
@@ -233,7 +279,6 @@ bool LoadPopConfig(std::string name)
 		vtPopControlInfos.clear();
 		int startHeight = 0;
 		int startWidth = 0;
-		CString dlgStyle = "UNKNOWN";
 		for(rapidxml::xml_node<>* mainItem = propertyNode->first_node("item"); mainItem != NULL; mainItem = mainItem->next_sibling("item"))
 		{
 			rapidxml::xml_node<>* nodeM;
@@ -243,12 +288,6 @@ bool LoadPopConfig(std::string name)
 
 			CString dlgStyleM	= nodeM->value();					dlgStyleM.Trim();
 			if(!ValidPopMainStyle(dlgStyleM))
-				continue;
-
-			if(dlgStyle == "UNKNOWN")
-				dlgStyle = dlgStyleM;
-
-			if(dlgStyle != dlgStyleM)
 				continue;
 
 			SPopControlMainInfo* mainInfo = new SPopControlMainInfo();
@@ -365,39 +404,43 @@ void DeclareNo(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareSourceListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareSourceListBoxInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareListBoxDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareSourceEditInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
+void DeclareListBoxInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareSourceEditStr(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareEditInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
 {
 }
 
-void DeclareSourceEditDouble(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
+void DeclareEditStr(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DeclareSourceEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareEditDouble(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
 {
 }
 
-void DeclareSourceEditDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DeclareSourceTupleEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareEditDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DeclareSourceCheckBox(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareTupleEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+}
+
+void DeclareCheckBox(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 

@@ -85,8 +85,10 @@ public:
 public:
 	void SetOrigin(CWnd* pWnd);
 	BOOL Show();
+private:
 	void CreatePopMain(SPopControlMainInfo* pMainInfo);
 	int WritePopDataToOrigin();
+	int GetPopText(std::vector<CString>& vtText);
 private:
 	int m_nId;
 	CWnd* m_pOriginWnd;								//原始控件
@@ -99,8 +101,7 @@ struct SPopItem
 {
 	SPopControlMainInfo* m_pMainInfo;
 	CWnd* m_pMainWnd;
-	std::vector<CWnd*> m_vtParamWnds;
-	std::map<HWND,SPopControlParamInfo*> m_mapParamInfos;
+	std::map<CWnd*,SPopControlParamInfo*> m_mapParamInfos;
 };
 
 //===================================================================================
@@ -167,36 +168,39 @@ bool LoadPopConfig(std::string name);
 void UnloadPopConfig();
 
 #define DECLARE_NO(ISWRITETODB,DLGID,NAME) DeclareNo(L,ISWRITETODB,DLGID,NAME)
-#define DECLARE_SOURCE_LISTBOX_DEFTYPE(ISWRITETODB,DLGID,NAME) DeclareSourceListBoxDefType(L,ISWRITETODB,DLGID,NAME)
-#define DECLARE_SOURCE_LISTBOX_INT(ISWRITETODB,DLGID,NAME) DeclareSourceListBoxInt(L,ISWRITETODB,DLGID,NAME)
-#define DECLARE_SOURCE_EDIT_INT(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceEditInt(L,ISWRITETODB,DLGID,NAME,DEFVAL)
-#define DECLARE_SOURCE_EDIT_STR(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceEditStr(L,ISWRITETODB,DLGID,NAME,DEFVAL)
-#define DECLARE_SOURCE_EDIT_DOUBLE(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceEditDouble(L,ISWRITETODB,DLGID,NAME,DEFVAL)
-#define DECLARE_SOURCE_EDIT_DEFTYPE(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceEditDefType(L,ISWRITETODB,DLGID,NAME,DEFVAL)
-#define DECLARE_SOURCE_EDIT_DEFTYPE_AND_PARAMS(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceEditDefTypeAndParams(ISWRITETODB,DLGID,NAME,DEFVAL)
-#define DECLARE_SOURCE_TUPLEEDIT_DEFTYPE(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceTupleEditDefType(L,ISWRITETODB,DLGID,NAME,DEFVAL)
-#define DECLARE_SOURCE_CHECKBOX(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareSourceCheckBox(ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_LISTBOX_DEFTYPE(ISWRITETODB,DLGID,NAME) DeclareListBoxDefType(L,ISWRITETODB,DLGID,NAME)
+#define DECLARE_LISTBOX_DEFTYPE_AND_PARAMS(ISWRITETODB,DLGID,NAME) DeclareListBoxDefTypeAndParams(L,ISWRITETODB,DLGID,NAME)
+#define DECLARE_LISTBOX_INT(ISWRITETODB,DLGID,NAME) DeclareListBoxInt(L,ISWRITETODB,DLGID,NAME)
+#define DECLARE_EDIT_INT(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareEditInt(L,ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_EDIT_STR(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareEditStr(L,ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_EDIT_DOUBLE(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareEditDouble(L,ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_EDIT_DEFTYPE(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareEditDefType(L,ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_EDIT_DEFTYPE_AND_PARAMS(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareEditDefTypeAndParams(ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_TUPLEEDIT_DEFTYPE(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareTupleEditDefType(L,ISWRITETODB,DLGID,NAME,DEFVAL)
+#define DECLARE_CHECKBOX(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareCheckBox(ISWRITETODB,DLGID,NAME,DEFVAL)
 
 //读/写ID
 void DeclareNo(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
 //读/写列表框（自定义类型，需要在外部表示和内部表示间转换）
-void DeclareSourceListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
+void DeclareListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
+//读/写列表框（自定义类型，需要在外部表示和内部表示间转换，带参数）
+void DeclareListBoxDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
 //读/写列表框（整形）
-void DeclareSourceListBoxInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
+void DeclareListBoxInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
 //读/写编辑框（整形）
-void DeclareSourceEditInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL);
+void DeclareEditInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL);
 //读/写编辑框（字符串）
-void DeclareSourceEditStr(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+void DeclareEditStr(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
 //读/写编辑框（浮点型）
-void DeclareSourceEditDouble(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL);
+void DeclareEditDouble(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL);
 //读/写编辑框（自定义类型，需要在外部表示和内部表示间转换）
-void DeclareSourceEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+void DeclareEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
 //读/写编辑框（自定义类型，需要在外部表示和内部表示间转换，带参数）
-void DeclareSourceEditDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+void DeclareEditDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
 //读/写编辑框（自定义类型，需要在外部表示和内部表示间转换，包含多条记录）
-void DeclareSourceTupleEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+void DeclareTupleEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
 //读/写复选框
-void DeclareSourceCheckBox(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
+void DeclareCheckBox(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL);
 
 //===================================================================================
 void ConvertGBKToUTF8(CString& strGBK);

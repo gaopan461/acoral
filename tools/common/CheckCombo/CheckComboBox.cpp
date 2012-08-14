@@ -363,7 +363,7 @@ void CCheckComboBox::RecalcText()
 		
 		// Get the list count
 		INT nCount    = GetCount();
-
+/*
 		// Get the list separator
 		TCHAR szBuffer[10] = {0};
 		GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SLIST, szBuffer, sizeof(szBuffer));
@@ -375,7 +375,9 @@ void CCheckComboBox::RecalcText()
 			strSeparator = ';';
 
 		// Trim extra spaces
-		strSeparator.TrimRight();
+		strSeparator.TrimRight();*/
+
+		CString strSeparator = "`";
 
 		// And one...
 		strSeparator += ' ';
