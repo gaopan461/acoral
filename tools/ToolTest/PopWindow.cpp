@@ -151,6 +151,8 @@ BOOL CPopWindow::OnInitDialog()
 	for(CollectionPopControlInfosT::iterator mainIter = popInfo.begin(); mainIter != popInfo.end(); mainIter++)
 		CreatePopMain(*mainIter);
 
+	UpdateOriginToPop();
+
 	return TRUE;
 }
 
@@ -167,6 +169,34 @@ BOOL CPopWindow::Show()
 {
 	DoModal();
 	return TRUE;
+}
+
+int CPopWindow::UpdateOriginToPop()
+{
+	if(!m_pOriginWnd)
+		return -1;
+
+	DWORD originId = m_pOriginWnd->GetDlgCtrlID();
+	if(g_mapOriginInfos.find(originId) == g_mapOriginInfos.end())
+		return -1;
+
+	int originDlgStyle = g_mapOriginInfos[originId].m_nDlgStyle;
+
+	std::vector<CString> vtText;
+	switch(originDlgStyle)
+	{
+	case ORIGIN_STYLE_EDITRADIO:
+	case ORIGIN_STYLE_EDITTUPLE:
+		{
+			CString text;
+			m_pOriginWnd->GetWindowText(text);
+		}
+		break;
+	case ORIGIN_STYLE_LISTBOX:
+		{}
+		break;
+	}
+	return 0;
 }
 
 int CPopWindow::GetPopText(std::vector<CString>& vtText)
@@ -199,7 +229,7 @@ int CPopWindow::GetPopText(std::vector<CString>& vtText)
 	return 0;
 }
 
-int CPopWindow::WritePopDataToOrigin()
+int CPopWindow::WritePopToOrigin()
 {
 	if(!m_pOriginWnd)
 		return -1;
@@ -231,7 +261,7 @@ int CPopWindow::WritePopDataToOrigin()
 		{
 			((CListBox*)m_pOriginWnd)->ResetContent();
 			for(std::vector<CString>::iterator iter = vtText.begin(); iter != vtText.end(); iter++)
-				((CListBox*)m_pOriginWnd)->AddString(iter->GetBuffer());
+				((CListBox*)m_pOriginWnd)->InsertString(-1,iter->GetBuffer());
 		}
 		break;
 	}
@@ -242,7 +272,7 @@ int CPopWindow::WritePopDataToOrigin()
 // CPopWindow 消息处理程序
 afx_msg void CPopWindow::OnClose()
 {
-	WritePopDataToOrigin();
+	WritePopToOrigin();
 	CDialog::OnClose();
 }
 

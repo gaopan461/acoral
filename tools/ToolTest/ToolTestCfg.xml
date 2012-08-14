@@ -13,6 +13,11 @@
 			<value> 1 </value>
 		</item>
 		<item>
+			<dlgStyle> static </dlgStyle>
+			<name> -------------------gaopan-------------------- </name>
+			<width> 1200 </width>
+		</item>
+		<item>
 			<dlgStyle> checkbox </dlgStyle>
 			<name> 测试3 </name>
 			<value> 2 </value>
@@ -65,7 +70,7 @@
 	
 	<testCheck>
 		<item>
-			<dlgStyle> radio </dlgStyle>
+			<dlgStyle> checkbox </dlgStyle>
 			<name> 测试1 </name>
 			<value> 0 </value>
 			<checked> 1 </checked>
@@ -135,6 +140,23 @@
 				<width> 50 </width>
 			</param>
 			<param>
+				<dlgStyle> comcheckbox 
+					<item>
+						<name> 美艳1 </name>
+						<value> 0 </value>
+					</item>
+					<item>
+						<name> 美艳2 </name>
+						<value> 1 </value>
+					</item>
+				</dlgStyle>
+				<name> 参数2 </name>
+				<cname> param2 </cname>
+				<default> 美艳2 </default>
+				<descr> 参数注释2 </descr>
+				<width> 50 </width>
+			</param>
+			<param>
 				<dlgStyle> edit </dlgStyle>
 				<name> 参数3 </name>
 				<cname> param3 </cname>
@@ -149,7 +171,7 @@
 			<width> 1200 </width>
 		</item>
 		<item>
-			<dlgStyle> radio </dlgStyle>
+			<dlgStyle> checkbox </dlgStyle>
 			<name> 测试2 </name>
 			<value> 1 </value>
 			<nonewline> 1 </nonewline>
@@ -163,7 +185,7 @@
 			</param>
 		</item>
 		<item>
-			<dlgStyle> radio </dlgStyle>
+			<dlgStyle> checkbox </dlgStyle>
 			<name> 测试3 </name>
 			<value> 2 </value>
 		</item>

@@ -87,7 +87,8 @@ public:
 	BOOL Show();
 private:
 	void CreatePopMain(SPopControlMainInfo* pMainInfo);
-	int WritePopDataToOrigin();
+	int UpdateOriginToPop();
+	int WritePopToOrigin();
 	int GetPopText(std::vector<CString>& vtText);
 private:
 	int m_nId;
