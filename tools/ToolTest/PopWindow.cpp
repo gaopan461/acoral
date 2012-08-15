@@ -174,7 +174,12 @@ BOOL CPopWindow::Show()
 
 int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 {
-	DWORD originId = m_pOriginWnd->GetDlgCtrlID();
+	return CPopWindow::OriginToMidData(m_pOriginWnd,mapData);
+}
+
+int CPopWindow::OriginToMidData(CWnd* pOriginWnd, CollectionMainTextsT& mapData)
+{
+	DWORD originId = pOriginWnd->GetDlgCtrlID();
 	if(g_mapOriginInfos.find(originId) == g_mapOriginInfos.end())
 		return -1;
 
@@ -187,7 +192,7 @@ int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 	case ORIGIN_STYLE_EDITTUPLE:
 		{
 			CString originText;
-			((CEdit*)m_pOriginWnd)->GetWindowText(originText);
+			((CEdit*)pOriginWnd)->GetWindowText(originText);
 
 			CString itemText;
 			int itemPos = 0;
@@ -203,9 +208,9 @@ int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 	case ORIGIN_STYLE_LISTBOX:
 		{
 			CString itemText;
-			for(int i = 0; i < ((CListBox*)m_pOriginWnd)->GetCount(); i++)
+			for(int i = 0; i < ((CListBox*)pOriginWnd)->GetCount(); i++)
 			{
-				((CListBox*)m_pOriginWnd)->GetText(i,itemText);
+				((CListBox*)pOriginWnd)->GetText(i,itemText);
 				vtItems.push_back(itemText);
 			}
 		}
@@ -565,49 +570,99 @@ void DeclareNo(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char
 {
 	ASSERT(lua_istable(L, -1));
 	CString strID;
-	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
+	ASSERT(!strID.IsEmpty());
 
 	lua_pushinteger(L, atoi(strID.GetBuffer()));
 	lua_setfield(L, -2, NAME);
 }
 
-void DeclareListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareListBoxDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareListBoxDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareListBoxDefTypeAndParams(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareListBoxInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareListBoxInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 }
 
-void DeclareEditInt(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
+void DeclareEditInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
+{
+	ASSERT(lua_istable(L, -1));
+	CString strID;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
+	int value = strID.IsEmpty() ? DEFVAL : atoi(strID.GetBuffer());
+
+	lua_pushinteger(L, value);
+	lua_setfield(L, -2, NAME);
+}
+
+void DeclareEditStr(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+	ASSERT(lua_istable(L, -1));
+	CString strID;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
+	const char* value = strID.IsEmpty() ? DEFVAL : strID.GetBuffer();
+
+	lua_pushstring(L, value);
+	lua_setfield(L, -2, NAME);
+}
+
+void DeclareEditDouble(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
+{
+	ASSERT(lua_istable(L, -1));
+	CString strID;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
+	double value = strID.IsEmpty() ? DEFVAL : atof(strID.GetBuffer());
+
+	lua_pushnumber(L, value);
+	lua_setfield(L, -2, NAME);
+}
+
+void DeclareEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+{
+	ASSERT(lua_istable(L, -1));
+	CString strID;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
+	if(strID.IsEmpty())
+		strID = DEFVAL;
+
+	CollectionMainTextsT mapData;
+	CPopWindow::OriginToMidData(pWnd->GetDlgItem(DLGID),mapData);
+	if(mapData.empty())
+		return;
+
+	ASSERT(g_mapOriginInfos.find(DLGID) != g_mapOriginInfos.end());
+	std::string& name = g_mapOriginInfos[DLGID].m_strName;
+	ASSERT(g_mapPopInfos.find(name) != g_mapPopInfos.end());
+	for(CollectionPopControlInfosT::iterator mainItem = g_mapPopInfos[name].begin(); 
+		mainItem != g_mapPopInfos[name].end(); 
+		mainItem++)
+	{
+		if(strID == (*mainItem)->m_strName.c_str())
+		{
+			lua_pushinteger(L, (*mainItem)->m_nValue);
+			lua_setfield(L, -2, NAME);
+			return;
+		}
+	}
+
+	//未找到对应转换
+	ASSERT(false);
+}
+
+void DeclareEditDefTypeAndParams(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DeclareEditStr(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareTupleEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
-void DeclareEditDouble(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
-{
-}
-
-void DeclareEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
-{
-}
-
-void DeclareEditDefTypeAndParams(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
-{
-}
-
-void DeclareTupleEditDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
-{
-}
-
-void DeclareCheckBox(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareCheckBox(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 }
 
