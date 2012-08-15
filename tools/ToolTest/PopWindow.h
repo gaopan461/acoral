@@ -82,6 +82,7 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnClose();
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 public:
 	void SetOrigin(CWnd* pWnd);
 	BOOL Show();
@@ -174,7 +175,7 @@ extern CollectionPopInfosT g_mapPopInfos;
 bool LoadPopConfig(std::string name);
 void UnloadPopConfig();
 
-#define DECLARE_NO(ISWRITETODB,DLGID,NAME) DeclareNo(L,ISWRITETODB,DLGID,NAME)
+#define DECLARE_NO(ISWRITETODB,DLGID,NAME) DeclareNo(this, L,ISWRITETODB,DLGID,NAME)
 #define DECLARE_LISTBOX_DEFTYPE(ISWRITETODB,DLGID,NAME) DeclareListBoxDefType(L,ISWRITETODB,DLGID,NAME)
 #define DECLARE_LISTBOX_DEFTYPE_AND_PARAMS(ISWRITETODB,DLGID,NAME) DeclareListBoxDefTypeAndParams(L,ISWRITETODB,DLGID,NAME)
 #define DECLARE_LISTBOX_INT(ISWRITETODB,DLGID,NAME) DeclareListBoxInt(L,ISWRITETODB,DLGID,NAME)
@@ -187,7 +188,7 @@ void UnloadPopConfig();
 #define DECLARE_CHECKBOX(ISWRITETODB,DLGID,NAME,DEFVAL) DeclareCheckBox(ISWRITETODB,DLGID,NAME,DEFVAL)
 
 //读/写ID
-void DeclareNo(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
+void DeclareNo(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
 //读/写列表框（自定义类型，需要在外部表示和内部表示间转换）
 void DeclareListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME);
 //读/写列表框（自定义类型，需要在外部表示和内部表示间转换，带参数）

@@ -158,6 +158,7 @@ BOOL CPopWindow::OnInitDialog()
 
 BEGIN_MESSAGE_MAP(CPopWindow, CDialog)
 	ON_WM_CLOSE()
+	ON_WM_RBUTTONDOWN()
 END_MESSAGE_MAP()
 
 void CPopWindow::SetOrigin(CWnd* pWnd)
@@ -397,8 +398,13 @@ int CPopWindow::WritePopToOrigin()
 // CPopWindow 消息处理程序
 afx_msg void CPopWindow::OnClose()
 {
-	WritePopToOrigin();
 	CDialog::OnClose();
+}
+
+afx_msg void CPopWindow::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	WritePopToOrigin();
+	CDialog::EndDialog(IDOK);
 }
 
 //===================================================================================
@@ -555,8 +561,14 @@ void UnloadPopConfig()
 	g_mapPopInfos.clear();
 }
 
-void DeclareNo(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
+void DeclareNo(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
+	ASSERT(lua_istable(L, -1));
+	CString strID;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);
+
+	lua_pushinteger(L, atoi(strID.GetBuffer()));
+	lua_setfield(L, -2, NAME);
 }
 
 void DeclareListBoxDefType(lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
