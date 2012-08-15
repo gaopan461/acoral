@@ -108,7 +108,7 @@ struct SPopItem
 {
 	SPopControlMainInfo* m_pMainInfo;
 	CWnd* m_pMainWnd;
-	std::map<CWnd*,SPopControlParamInfo*> m_mapParamInfos;
+	std::vector<std::pair<CWnd*,SPopControlParamInfo*>> m_vtParamInfos;
 };
 
 //===================================================================================

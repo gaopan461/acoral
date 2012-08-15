@@ -131,7 +131,7 @@ void CPopWindow::CreatePopMain(SPopControlMainInfo* pMainInfo)
 		}
 
 		m_vtWnds.push_back(pParamWnd);
-		pPopItem->m_mapParamInfos.insert(std::make_pair(pParamWnd,pParamInfo));
+		pPopItem->m_vtParamInfos.push_back(std::make_pair(pParamWnd,pParamInfo));
 	}
 	m_vtPopItems.push_back(pPopItem);
 }
@@ -201,13 +201,19 @@ int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 		break;
 	case ORIGIN_STYLE_LISTBOX:
 		{
-
+			CString itemText;
+			for(int i = 0; i < ((CListBox*)m_pOriginWnd)->GetCount(); i++)
+			{
+				((CListBox*)m_pOriginWnd)->GetText(i,itemText);
+				vtItems.push_back(itemText);
+			}
 		}
 		break;
 	}
 
 	for(std::vector<CString>::iterator iterItem = vtItems.begin(); iterItem != vtItems.end(); iterItem++)
 	{
+		iterItem->Trim();
 		CollectionParamTextsT vtParamTexts;
 		vtParamTexts.clear();
 
@@ -215,13 +221,13 @@ int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 		int mainPos = iterItem->FindOneOf(":");
 		if(mainPos != -1)
 		{
-			CString mainText = iterItem->Left(mainPos);
-			CString paramsText = iterItem->Mid(mainPos + 1);
+			CString mainText = iterItem->Left(mainPos);mainText.Trim();
+			CString paramsText = iterItem->Mid(mainPos + 1);paramsText.Trim();
 
 			CString paramText;
 			int paramPos = 0;
 			//参数控件之间通过,隔开
-			paramText = paramsText.Tokenize(_T(","),paramPos);
+			paramText = paramsText.Tokenize(_T(","),paramPos);paramText.Trim();
 			while(paramText != _T(""))
 			{
 				CollectionParamValuesT vtParamValues;
@@ -231,17 +237,17 @@ int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 				int paramNamePos = paramText.FindOneOf("=");
 				if(paramNamePos != -1)
 				{
-					CString paramName = paramText.Left(paramNamePos);
-					CString paramValues = paramText.Mid(paramNamePos + 1);
+					CString paramName = paramText.Left(paramNamePos);paramName.Trim();
+					CString paramValues = paramText.Mid(paramNamePos + 1);paramValues.Trim();
 
 					CString paramValue;
 					int paramValuePos = 0;
 					//参数的多个值通过`隔开
-					paramValue = paramValues.Tokenize(_T("`"),paramValuePos);
+					paramValue = paramValues.Tokenize(_T("`"),paramValuePos);paramValue.Trim();
 					while(paramValue != _T(""))
 					{
 						vtParamValues.push_back(paramValue);
-						paramValue = paramValues.Tokenize(_T("`"),paramValuePos);
+						paramValue = paramValues.Tokenize(_T("`"),paramValuePos);paramValue.Trim();
 					}
 
 					vtParamTexts.push_back(std::make_pair(paramName,vtParamValues));
@@ -249,7 +255,7 @@ int CPopWindow::OriginToMidData(CollectionMainTextsT& mapData)
 				else
 					vtParamTexts.push_back(std::make_pair(paramText,vtParamValues));
 
-				paramText = paramsText.Tokenize(_T(","),paramPos);
+				paramText = paramsText.Tokenize(_T(","),paramPos);paramText.Trim();
 			}
 
 			mapData.insert(std::make_pair(mainText,vtParamTexts));
@@ -270,6 +276,51 @@ int CPopWindow::UpdateOriginToPop()
 	if(OriginToMidData(mapData) != 0)
 		return -1;
 
+	for(std::vector<SPopItem*>::iterator itemIter = m_vtPopItems.begin(); itemIter != m_vtPopItems.end(); itemIter++)
+	{
+		CString mainName = (*itemIter)->m_pMainInfo->m_strName.c_str();
+		if(mapData.find(mainName) != mapData.end())
+		{
+			((CButton*)((*itemIter)->m_pMainWnd))->SetCheck(BST_CHECKED);
+			CollectionParamTextsT& vtParamTexts = mapData[mainName];
+			std::vector<std::pair<CWnd*,SPopControlParamInfo*>>& vtParamInfos = (*itemIter)->m_vtParamInfos;
+			if(vtParamTexts.size() != vtParamInfos.size())
+				continue;
+
+			for(size_t paramIdx = 0; paramIdx < vtParamTexts.size(); paramIdx++)
+			{
+				if(vtParamTexts[paramIdx].first != vtParamInfos[paramIdx].second->m_strName.c_str())
+					break;
+
+				if(vtParamTexts[paramIdx].second.empty())
+					continue;
+
+				if(vtParamInfos[paramIdx].second->m_strDlgStyle == "edit")
+				{
+					CString paramValue = vtParamTexts[paramIdx].second[0];
+					vtParamInfos[paramIdx].first->SetWindowText(paramValue.GetBuffer());
+				}
+				else if(vtParamInfos[paramIdx].second->m_strDlgStyle == "combobox")
+				{
+					CString paramValue = vtParamTexts[paramIdx].second[0];
+					CComboBox* pParamWnd = (CComboBox*)(vtParamInfos[paramIdx].first);
+					pParamWnd->SelectString(-1,paramValue.GetBuffer());
+				}
+				else if(vtParamInfos[paramIdx].second->m_strDlgStyle == "comcheckbox")
+				{
+					CCheckComboBox* pParamWnd = (CCheckComboBox*)(vtParamInfos[paramIdx].first);
+					CollectionParamValuesT& vtParamValues = vtParamTexts[paramIdx].second;
+					for(std::vector<CString>::iterator valueItem = vtParamValues.begin(); valueItem != vtParamValues.end(); valueItem++)
+					{
+						int idx = pParamWnd->FindStringExact(-1,valueItem->GetBuffer());
+						if(idx != CB_ERR)
+							pParamWnd->SetCheck(idx,TRUE);
+					}
+				}
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -280,14 +331,14 @@ int CPopWindow::PopToMidData(std::vector<CString>& vtData)
 		if(((CButton*)((*mainItem)->m_pMainWnd))->GetCheck() == 1)
 		{
 			CString text = (*mainItem)->m_pMainInfo->m_strName.c_str();
-			if(!(*mainItem)->m_mapParamInfos.empty())
+			if(!(*mainItem)->m_vtParamInfos.empty())
 				text = text + ":";
 
-			for(std::map<CWnd*,SPopControlParamInfo*>::iterator paramItem = (*mainItem)->m_mapParamInfos.begin(); 
-				paramItem != (*mainItem)->m_mapParamInfos.end(); 
+			for(std::vector<std::pair<CWnd*,SPopControlParamInfo*>>::iterator paramItem = (*mainItem)->m_vtParamInfos.begin(); 
+				paramItem != (*mainItem)->m_vtParamInfos.end(); 
 				paramItem++)
 			{
-				if(paramItem != (*mainItem)->m_mapParamInfos.begin())
+				if(paramItem != (*mainItem)->m_vtParamInfos.begin())
 					text = text + ",";
 
 				text = text + paramItem->second->m_strName.c_str();
