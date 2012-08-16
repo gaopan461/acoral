@@ -650,11 +650,22 @@ void DeclareNo(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char
 {
 	ASSERT(lua_istable(L, -1));
 	CString strID;
-	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
-	ASSERT(!strID.IsEmpty());
+	if(ISWRITETODB)
+	{
+		pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
+		ASSERT(!strID.IsEmpty());
 
-	lua_pushinteger(L, atoi(strID.GetBuffer()));
-	lua_setfield(L, -2, NAME);
+		lua_pushinteger(L, atoi(strID.GetBuffer()));
+		lua_setfield(L, -2, NAME);
+	}
+	else
+	{
+		lua_getfield(L, -1, NAME);
+		ASSERT(lua_isnumber(L,-1));
+		strID = lua_tostring(L, -1);
+		lua_pop(L,1);
+		pWnd->GetDlgItem(DLGID)->SetWindowText(strID.GetBuffer());
+	}
 }
 
 void DeclareListBoxDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
