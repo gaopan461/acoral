@@ -64,7 +64,30 @@ extern bool g_bIsPopMenu;
 //===================================================================================
 typedef std::vector<CString> CollectionParamValuesT;
 typedef std::vector<std::pair<CString,CollectionParamValuesT>> CollectionParamTextsT;
+//原始控件上的值，经过解析后，变成下面的格式：map(mainName, vector(paramName = paramValue))
 typedef std::map<CString,CollectionParamTextsT> CollectionMainTextsT;
+
+struct SParamDefType
+{
+	std::string m_strCName;
+	std::string m_strDlgStyle;
+	int m_nComboboxValue;
+	std::vector<int> m_vtComCheckboxValue;
+	std::string m_strEditValue;
+	std::string m_strEditReverse;
+	SParamDefType()
+	{
+		m_strCName = "";
+		m_strDlgStyle = "";
+		m_nComboboxValue = -1;
+		m_vtComCheckboxValue.clear();
+		m_strEditValue = "";
+		m_strEditReverse = "";
+	}
+};
+//原始控件上的值转换成存储时的内部表示
+typedef std::map<int,std::vector<SParamDefType>> CollectMainDefTypesT;
+int OriginToDefType(CWnd* pOriginWnd,CollectMainDefTypesT& mapDefType);
 
 // CPopWindow 对话框
 class CPopWindow : public CDialog

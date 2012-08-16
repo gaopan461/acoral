@@ -29,6 +29,86 @@ bool ValidPopParamStyle(const CString& style)
 bool g_bIsPopMenu = true;
 
 //===================================================================================
+
+int OriginToDefType(CWnd* pOriginWnd, CollectMainDefTypesT& mapDefType)
+{
+	//获取该原始控件的xml配置信息
+	int dlgId = pOriginWnd->GetDlgCtrlID();
+	ASSERT(g_mapOriginInfos.find(dlgId) != g_mapOriginInfos.end());
+	std::string xmlName = g_mapOriginInfos[dlgId].m_strName;
+	ASSERT(g_mapPopInfos.find(xmlName) != g_mapPopInfos.end());
+	CollectionPopControlInfosT& vtMainInfos = g_mapPopInfos[xmlName];
+
+	//将该原始控件中的内容进行解析，变成一种中间格式
+	CollectionMainTextsT mapMidData;
+	CPopWindow::OriginToMidData(pOriginWnd,mapMidData);
+
+	//对中间格式进行翻译（把文字转成内部表示）
+	for(CollectionMainTextsT::iterator mainTextItem = mapMidData.begin(); mainTextItem != mapMidData.end(); mainTextItem++)
+	{
+		CString mainName = mainTextItem->first;
+		for(CollectionPopControlInfosT::iterator mainInfoItem = vtMainInfos.begin(); mainInfoItem != vtMainInfos.end(); mainInfoItem++)
+		{
+			//主控件匹配
+			if(mainName == (*mainInfoItem)->m_strName.c_str())
+			{
+				//主控件转换为内部值
+				int mainValue = (*mainInfoItem)->m_nValue;
+
+				CollectionParamTextsT& vtParamsText = mainTextItem->second;
+				std::vector<SPopControlParamInfo*>& vtParamsInfo = (*mainInfoItem)->m_vtParams;
+				ASSERT(vtParamsText.size() == vtParamsInfo.size());
+				std::vector<SParamDefType> vtParamDefTypes;
+				vtParamDefTypes.clear();
+				for(size_t paramIdx = 0; paramIdx < vtParamsText.size(); paramIdx++)
+				{
+					//参数控件名字需匹配
+					ASSERT(vtParamsText[paramIdx].first == vtParamsInfo[paramIdx]->m_strName.c_str());
+
+					SParamDefType paramDefType;
+					paramDefType.m_strCName = vtParamsInfo[paramIdx]->m_strCName;
+					paramDefType.m_strDlgStyle = vtParamsInfo[paramIdx]->m_strDlgStyle;
+					if(paramDefType.m_strDlgStyle == "edit")
+					{
+						paramDefType.m_strEditReverse = vtParamsInfo[paramIdx]->m_strReverse;
+						if(!vtParamsText[paramIdx].second.empty())
+							paramDefType.m_strEditValue = vtParamsText[paramIdx].second[0].GetBuffer();
+					}
+					else if(paramDefType.m_strDlgStyle == "combobox")
+					{
+						if(!vtParamsText[paramIdx].second.empty())
+						{
+							std::string comboboxName = vtParamsText[paramIdx].second[0].GetBuffer();
+							std::map<std::string, std::string>& mapValue = vtParamsInfo[paramIdx]->m_mapValue;
+							ASSERT(mapValue.find(comboboxName) != mapValue.end());
+							paramDefType.m_nComboboxValue = atoi(mapValue[comboboxName].c_str());
+						}
+					}
+					else if(paramDefType.m_strDlgStyle == "comcheckbox")
+					{
+						CollectionParamValuesT& vtParamValuesText = vtParamsText[paramIdx].second;
+						for(CollectionParamValuesT::iterator paramValueItem = vtParamValuesText.begin(); paramValueItem != vtParamValuesText.end(); paramValueItem++)
+						{
+							std::string comcheckboxName = paramValueItem->GetBuffer();
+							std::map<std::string, std::string>& mapValue = vtParamsInfo[paramIdx]->m_mapValue;
+							ASSERT(mapValue.find(comcheckboxName) != mapValue.end());
+							paramDefType.m_vtComCheckboxValue.push_back(atoi(mapValue[comcheckboxName].c_str()));
+						}
+					}
+					else
+						ASSERT(false);
+
+					vtParamDefTypes.push_back(paramDefType);
+				}
+
+				mapDefType.insert(std::make_pair(mainValue,vtParamDefTypes));
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
 // CPopWindow 对话框
 
 IMPLEMENT_DYNAMIC(CPopWindow, CDialog)
@@ -592,9 +672,9 @@ void DeclareListBoxInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, co
 void DeclareEditInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
 {
 	ASSERT(lua_istable(L, -1));
-	CString strID;
-	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
-	int value = strID.IsEmpty() ? DEFVAL : atoi(strID.GetBuffer());
+	CString strInt;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strInt);strInt.Trim();
+	int value = strInt.IsEmpty() ? DEFVAL : atoi(strInt.GetBuffer());
 
 	lua_pushinteger(L, value);
 	lua_setfield(L, -2, NAME);
@@ -603,9 +683,9 @@ void DeclareEditInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const
 void DeclareEditStr(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 	ASSERT(lua_istable(L, -1));
-	CString strID;
-	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
-	const char* value = strID.IsEmpty() ? DEFVAL : strID.GetBuffer();
+	CString strStr;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strStr);strStr.Trim();
+	const char* value = strStr.IsEmpty() ? DEFVAL : strStr.GetBuffer();
 
 	lua_pushstring(L, value);
 	lua_setfield(L, -2, NAME);
@@ -614,9 +694,9 @@ void DeclareEditStr(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const
 void DeclareEditDouble(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, float DEFVAL)
 {
 	ASSERT(lua_istable(L, -1));
-	CString strID;
-	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
-	double value = strID.IsEmpty() ? DEFVAL : atof(strID.GetBuffer());
+	CString strDouble;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strDouble);strDouble.Trim();
+	double value = strDouble.IsEmpty() ? DEFVAL : atof(strDouble.GetBuffer());
 
 	lua_pushnumber(L, value);
 	lua_setfield(L, -2, NAME);
@@ -625,45 +705,131 @@ void DeclareEditDouble(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, co
 void DeclareEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
 	ASSERT(lua_istable(L, -1));
-	CString strID;
-	pWnd->GetDlgItem(DLGID)->GetWindowText(strID);strID.Trim();
-	if(strID.IsEmpty())
-		strID = DEFVAL;
+	CString strDefType;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strDefType);strDefType.Trim();
+	if(strDefType.IsEmpty())
+		strDefType = DEFVAL;
 
-	CollectionMainTextsT mapData;
-	CPopWindow::OriginToMidData(pWnd->GetDlgItem(DLGID),mapData);
-	if(mapData.empty())
-		return;
-
-	ASSERT(g_mapOriginInfos.find(DLGID) != g_mapOriginInfos.end());
-	std::string& name = g_mapOriginInfos[DLGID].m_strName;
-	ASSERT(g_mapPopInfos.find(name) != g_mapPopInfos.end());
-	for(CollectionPopControlInfosT::iterator mainItem = g_mapPopInfos[name].begin(); 
-		mainItem != g_mapPopInfos[name].end(); 
-		mainItem++)
+	//空且无默认值，设置为-1
+	if(strDefType.IsEmpty())
 	{
-		if(strID == (*mainItem)->m_strName.c_str())
-		{
-			lua_pushinteger(L, (*mainItem)->m_nValue);
-			lua_setfield(L, -2, NAME);
-			return;
-		}
+		lua_pushinteger(L, -1);
+		lua_setfield(L, -2, NAME);
+		return;
 	}
 
-	//未找到对应转换
-	ASSERT(false);
+	CollectMainDefTypesT mapDefType;
+	OriginToDefType(pWnd,mapDefType);
+
+	ASSERT(!mapDefType.empty());
+	lua_pushinteger(L, mapDefType.begin()->first);
+	lua_setfield(L, -2, NAME);
 }
 
 void DeclareEditDefTypeAndParams(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
+	ASSERT(lua_istable(L, -1));
+	CString strDefType;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strDefType);strDefType.Trim();
+	if(strDefType.IsEmpty())
+		strDefType = DEFVAL;
+
+	//空且无默认值，设置为空表
+	if(strDefType.IsEmpty())
+	{
+		lua_newtable(L);
+		lua_setfield(L, -2, NAME);
+		return;
+	}
+
+	CollectMainDefTypesT mapDefType;
+	OriginToDefType(pWnd,mapDefType);
+
+	lua_newtable(L);
+	for(CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+	{
+		lua_pushinteger(L, mainItem->first);
+		lua_newtable(L);
+		for (std::vector<SParamDefType>::iterator paramItem = mainItem->second.begin(); paramItem != mainItem->second.end(); paramItem++)
+		{
+			if(paramItem->m_strDlgStyle == "edit")
+			{
+				lua_pushstring(L, paramItem->m_strCName.c_str());
+				if(paramItem->m_strEditReverse == "number")
+					lua_pushnumber(L, atof(paramItem->m_strEditValue.c_str()));
+				else
+					lua_pushstring(L, paramItem->m_strEditValue.c_str());
+				lua_settable(L, -3);
+			}
+			else if(paramItem->m_strDlgStyle == "combobox")
+			{
+				lua_pushstring(L, paramItem->m_strCName.c_str());
+				lua_pushinteger(L, paramItem->m_nComboboxValue);
+				lua_settable(L, -3);
+			}
+			else if(paramItem->m_strDlgStyle == "comcheckbox")
+			{
+				lua_pushstring(L, paramItem->m_strCName.c_str());
+				lua_newtable(L);
+				for(size_t num = 0; num < paramItem->m_vtComCheckboxValue.size(); num++)
+				{
+					lua_pushinteger(L, num);
+					lua_pushinteger(L, paramItem->m_vtComCheckboxValue[num]);
+					lua_settable(L, -3);
+				}
+				lua_settable(L ,-3);
+			}
+		}
+		lua_settable(L, -3);
+	}
+
+	lua_setfield(L, -2, NAME);	
 }
 
 void DeclareTupleEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
 {
+	ASSERT(lua_istable(L, -1));
+	CString strDefType;
+	pWnd->GetDlgItem(DLGID)->GetWindowText(strDefType);strDefType.Trim();
+	if(strDefType.IsEmpty())
+		strDefType = DEFVAL;
+
+	//空且无默认值，设置为空表
+	if(strDefType.IsEmpty())
+	{
+		lua_newtable(L);
+		lua_setfield(L, -2, NAME);
+		return;
+	}
+
+	CollectMainDefTypesT mapDefType;
+	OriginToDefType(pWnd,mapDefType);
+
+	lua_newtable(L);
+	int num = 0;
+	for(CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+	{
+		lua_pushinteger(L, num);
+		lua_pushinteger(L, mainItem->first);
+		lua_settable(L, -3);
+		num++;
+	}
+
+	lua_setfield(L, -2, NAME);	
 }
 
-void DeclareCheckBox(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
+void DeclareCheckBox(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, bool DEFVAL)
 {
+	ASSERT(lua_istable(L, -1));
+	CButton* pButton = (CButton*)(pWnd->GetDlgItem(DLGID));
+	bool isCheck;
+	if(pButton->GetCheck() == 0)
+		isCheck = DEFVAL;
+	else
+		isCheck = true;
+
+	lua_pushboolean(L, isCheck);
+	lua_setfield(L, -2, NAME);
 }
 
 //===================================================================================
