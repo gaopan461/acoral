@@ -659,14 +659,85 @@ void DeclareNo(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char
 
 void DeclareListBoxDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
+	ASSERT(lua_istable(L, -1));
+
+	CollectMainDefTypesT mapDefType;
+	OriginToDefType(pWnd,mapDefType);
+
+	lua_newtable(L);
+	int num = 0;
+	for (CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+	{
+		lua_pushinteger(L, num);
+		lua_pushinteger(L, mainItem->first);
+		lua_settable(L, -3);
+		num++;
+	}
+
+	lua_setfield(L, -2, NAME);
 }
 
 void DeclareListBoxDefTypeAndParams(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
+	ASSERT(lua_istable(L, -1));
+	CollectMainDefTypesT mapDefType;
+	OriginToDefType(pWnd,mapDefType);
+
+	lua_newtable(L);
+	for(CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+	{
+		lua_pushinteger(L, mainItem->first);
+		lua_newtable(L);
+		for (std::vector<SParamDefType>::iterator paramItem = mainItem->second.begin(); paramItem != mainItem->second.end(); paramItem++)
+		{
+			if(paramItem->m_strDlgStyle == "edit")
+			{
+				lua_pushstring(L, paramItem->m_strCName.c_str());
+				if(paramItem->m_strEditReverse == "number")
+					lua_pushnumber(L, atof(paramItem->m_strEditValue.c_str()));
+				else
+					lua_pushstring(L, paramItem->m_strEditValue.c_str());
+				lua_settable(L, -3);
+			}
+			else if(paramItem->m_strDlgStyle == "combobox")
+			{
+				lua_pushstring(L, paramItem->m_strCName.c_str());
+				lua_pushinteger(L, paramItem->m_nComboboxValue);
+				lua_settable(L, -3);
+			}
+			else if(paramItem->m_strDlgStyle == "comcheckbox")
+			{
+				lua_pushstring(L, paramItem->m_strCName.c_str());
+				lua_newtable(L);
+				for(size_t num = 0; num < paramItem->m_vtComCheckboxValue.size(); num++)
+				{
+					lua_pushinteger(L, num);
+					lua_pushinteger(L, paramItem->m_vtComCheckboxValue[num]);
+					lua_settable(L, -3);
+				}
+				lua_settable(L ,-3);
+			}
+		}
+		lua_settable(L, -3);
+	}
+
+	lua_setfield(L, -2, NAME);	
 }
 
 void DeclareListBoxInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
+	ASSERT(lua_istable(L, -1));
+	CListBox* pListBox = (CListBox*)(pWnd->GetDlgItem(DLGID));
+	lua_newtable(L);
+	for(int i = 0; i < pListBox->GetCount(); i++)
+	{
+		CString strValue;
+		pListBox->GetText(i,strValue);
+		lua_pushinteger(L, i);
+		lua_pushinteger(L, atoi(strValue.GetBuffer()));
+		lua_settable(L, -3);
+	}
+	lua_setfield(L, -2, NAME);
 }
 
 void DeclareEditInt(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, long DEFVAL)
@@ -742,48 +813,7 @@ void DeclareEditDefTypeAndParams(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int
 		return;
 	}
 
-	CollectMainDefTypesT mapDefType;
-	OriginToDefType(pWnd,mapDefType);
-
-	lua_newtable(L);
-	for(CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
-	{
-		lua_pushinteger(L, mainItem->first);
-		lua_newtable(L);
-		for (std::vector<SParamDefType>::iterator paramItem = mainItem->second.begin(); paramItem != mainItem->second.end(); paramItem++)
-		{
-			if(paramItem->m_strDlgStyle == "edit")
-			{
-				lua_pushstring(L, paramItem->m_strCName.c_str());
-				if(paramItem->m_strEditReverse == "number")
-					lua_pushnumber(L, atof(paramItem->m_strEditValue.c_str()));
-				else
-					lua_pushstring(L, paramItem->m_strEditValue.c_str());
-				lua_settable(L, -3);
-			}
-			else if(paramItem->m_strDlgStyle == "combobox")
-			{
-				lua_pushstring(L, paramItem->m_strCName.c_str());
-				lua_pushinteger(L, paramItem->m_nComboboxValue);
-				lua_settable(L, -3);
-			}
-			else if(paramItem->m_strDlgStyle == "comcheckbox")
-			{
-				lua_pushstring(L, paramItem->m_strCName.c_str());
-				lua_newtable(L);
-				for(size_t num = 0; num < paramItem->m_vtComCheckboxValue.size(); num++)
-				{
-					lua_pushinteger(L, num);
-					lua_pushinteger(L, paramItem->m_vtComCheckboxValue[num]);
-					lua_settable(L, -3);
-				}
-				lua_settable(L ,-3);
-			}
-		}
-		lua_settable(L, -3);
-	}
-
-	lua_setfield(L, -2, NAME);	
+	return DeclareListBoxDefTypeAndParams(pWnd,L,ISWRITETODB,DLGID,NAME);
 }
 
 void DeclareTupleEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME, const char* DEFVAL)
