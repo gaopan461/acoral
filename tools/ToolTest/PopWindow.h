@@ -89,6 +89,9 @@ struct SParamDefType
 typedef std::map<int,std::vector<SParamDefType>> CollectMainDefTypesT;
 int OriginToDefType(CWnd* pOriginWnd,CollectMainDefTypesT& mapDefType);
 
+//内部表示转成原始控件上的值
+int DefTypeToOrigin(CWnd* pOriginWnd, const CollectMainDefTypesT& mapDefType, std::vector<CString>& vtTexts);
+
 // CPopWindow 对话框
 class CPopWindow : public CDialog
 {

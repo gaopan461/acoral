@@ -109,6 +109,84 @@ int OriginToDefType(CWnd* pOriginWnd, CollectMainDefTypesT& mapDefType)
 	return 0;
 }
 
+int DefTypeToOrigin(CWnd* pOriginWnd, CollectMainDefTypesT& mapDefType, std::vector<CString>& vtTexts)
+{
+	ASSERT(pOriginWnd);
+	int dlgId = pOriginWnd->GetDlgCtrlID();
+	ASSERT(g_mapOriginInfos.find(dlgId) != g_mapOriginInfos.end());
+	std::string xmlName = g_mapOriginInfos[dlgId].m_strName;
+	ASSERT(g_mapPopInfos.find(xmlName) != g_mapPopInfos.end());
+	CollectionPopControlInfosT& mainInfos = g_mapPopInfos[xmlName];
+	for(CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+	{
+		int mainValue = mainItem->first;
+		for(size_t mainIdx = 0; mainIdx < mainInfos.size(); mainIdx++)
+		{
+			//主控件匹配
+			if(mainInfos[mainIdx]->m_nValue ==  mainValue)
+			{
+				//main
+				CString text = mainInfos[mainIdx]->m_strName.c_str();
+				std::vector<SParamDefType>& vtParams = mainItem->second;
+				std::vector<SPopControlParamInfo*>& vtParamInfos = mainInfos[mainIdx]->m_vtParams;
+				//参数控件个数不匹配，返回
+				if(vtParams.size() != vtParamInfos.size())
+					return -1;
+
+				//main:
+				if(!vtParams.empty())
+					text += ":";
+
+				for(size_t paramIdx = 0; paramIdx < vtParams.size(); paramIdx++)
+				{
+					//参数名不匹配，返回
+					if(vtParams[paramIdx].m_strCName != vtParamInfos[paramIdx]->m_strCName)
+						return -1;
+
+					//参数间用","分隔
+					if(paramIdx != 0)
+						text += ",";
+
+					text += vtParamInfos[paramIdx]->m_strName.c_str();
+					text += "=";
+
+					std::string dlgStyle = vtParamInfos[paramIdx]->m_strDlgStyle;
+					if(dlgStyle == "edit")
+						text += vtParams[paramIdx].m_strEditValue.c_str();
+					else if(dlgStyle == "combobox")
+					{
+						for(std::map<std::string,std::string>::iterator paramValueItem = vtParamInfos[paramIdx]->m_mapValue.begin(); 
+							paramValueItem != vtParamInfos[paramIdx]->m_mapValue.end(); 
+							paramValueItem++)
+							if(atoi(paramValueItem->second.c_str()) == vtParams[paramIdx].m_nComboboxValue)
+							{
+								text += paramValueItem->first.c_str();
+								break;
+							}
+					}
+					else if(dlgStyle == "comcheckbox")
+					{
+						for(size_t idx = 0; idx < vtParams[paramIdx].m_vtComCheckboxValue.size(); idx++)
+						{
+							for(std::map<std::string,std::string>::iterator paramValueItem = vtParamInfos[paramIdx]->m_mapValue.begin(); 
+								paramValueItem != vtParamInfos[paramIdx]->m_mapValue.end(); 
+								paramValueItem++)
+								if(atoi(paramValueItem->second.c_str()) == vtParams[paramIdx].m_vtComCheckboxValue[idx])
+								{
+									text += paramValueItem->first.c_str();
+									break;
+								}
+						}
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+
 // CPopWindow 对话框
 
 IMPLEMENT_DYNAMIC(CPopWindow, CDialog)
@@ -672,27 +750,47 @@ void DeclareListBoxDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID
 {
 	ASSERT(lua_istable(L, -1));
 
-	CollectMainDefTypesT mapDefType;
-	OriginToDefType(pWnd,mapDefType);
-
-	lua_newtable(L);
-	int num = 0;
-	for (CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+	if(ISWRITETODB)
 	{
-		lua_pushinteger(L, num);
-		lua_pushinteger(L, mainItem->first);
-		lua_settable(L, -3);
-		num++;
-	}
+		CollectMainDefTypesT mapDefType;
+		OriginToDefType(pWnd->GetDlgItem(DLGID),mapDefType);
 
-	lua_setfield(L, -2, NAME);
+		lua_newtable(L);
+		int num = 1;
+		for (CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
+		{
+			lua_pushinteger(L, num);
+			lua_pushinteger(L, mainItem->first);
+			lua_settable(L, -3);
+			num++;
+		}
+
+		lua_setfield(L, -2, NAME);
+	}
+	else
+	{
+		CollectMainDefTypesT mapDefType;
+		lua_pushnil(L);
+		while (lua_next(L, -2) != 0) 
+		{
+			ASSERT(lua_isnumber(L, -1));
+			int mainValue = lua_tointeger(L, -1);
+			lua_pop(L, 1);
+			std::vector<SParamDefType> vtParams;
+			vtParams.clear();
+			mapDefType.insert(std::make_pair(mainValue, vtParams));
+		}
+
+		std::vector<CString> vtTexts;
+		DefTypeToOrigin(pWnd->GetDlgItem(DLGID), mapDefType, vtTexts);
+	}
 }
 
 void DeclareListBoxDefTypeAndParams(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, const char* NAME)
 {
 	ASSERT(lua_istable(L, -1));
 	CollectMainDefTypesT mapDefType;
-	OriginToDefType(pWnd,mapDefType);
+	OriginToDefType(pWnd->GetDlgItem(DLGID),mapDefType);
 
 	lua_newtable(L);
 	for(CollectMainDefTypesT::iterator mainItem = mapDefType.begin(); mainItem != mapDefType.end(); mainItem++)
@@ -801,7 +899,7 @@ void DeclareEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLGID, c
 	}
 
 	CollectMainDefTypesT mapDefType;
-	OriginToDefType(pWnd,mapDefType);
+	OriginToDefType(pWnd->GetDlgItem(DLGID),mapDefType);
 
 	ASSERT(!mapDefType.empty());
 	lua_pushinteger(L, mapDefType.begin()->first);
@@ -844,7 +942,7 @@ void DeclareTupleEditDefType(CWnd* pWnd, lua_State* L, bool ISWRITETODB, int DLG
 	}
 
 	CollectMainDefTypesT mapDefType;
-	OriginToDefType(pWnd,mapDefType);
+	OriginToDefType(pWnd->GetDlgItem(DLGID),mapDefType);
 
 	lua_newtable(L);
 	int num = 0;
