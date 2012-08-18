@@ -2,7 +2,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-namespace acoral
+namespace acutils
 {
 	Log* Log::m_pInstance = 0;
 	long Log::m_nSingletonGuard = 0;

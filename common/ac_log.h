@@ -11,23 +11,29 @@
 #define LOG_INTERFACE
 #endif //AC_LOG
 
-#define DEBUG_MSG(fmt,...) acoral::Log::Instance().AddLog(acoral::LOG_DEBUG,fmt,__VA_ARGS__)
-#define ERROR_MSG(fmt,...) acoral::Log::Instance().AddLog(acoral::LOG_ERROR,fmt,__VA_ARGS__)
-#define WARN_MSG(fmt,...) acoral::Log::Instance().AddLog(acoral::LOG_WARNING,fmt,__VA_ARGS__)
-#define INFO_MSG(fmt,...) acoral::Log::Instance().AddLog(acoral::LOG_INFO,fmt,__VA_ARGS__)
+#define DEBUG_MSG(fmt,...) acutils::Log::Instance().AddLog(acutils::LOG_DEBUG,fmt,__VA_ARGS__)
+#define ERROR_MSG(fmt,...) acutils::Log::Instance().AddLog(acutils::LOG_ERROR,fmt,__VA_ARGS__)
+#define WARN_MSG(fmt,...) acutils::Log::Instance().AddLog(acutils::LOG_WARNING,fmt,__VA_ARGS__)
+#define INFO_MSG(fmt,...) acutils::Log::Instance().AddLog(acutils::LOG_INFO,fmt,__VA_ARGS__)
 
-namespace acoral
+namespace acutils
 {
+	/*
+	 *	日志级别 
+	 */
 	enum ELogType
 	{
-		LOG_DEBUG,
-		LOG_ERROR,
-		LOG_WARNING,
-		LOG_INFO,
+		LOG_DEBUG,				//调试
+		LOG_ERROR,				//错误
+		LOG_WARNING,			//警告
+		LOG_INFO,				//普通
 	};
 
 	class LogConsole;
 
+	/*
+	 *	日志基类
+	 */
 	class Log
 	{
 		static void CreateInstance();
@@ -45,6 +51,17 @@ namespace acoral
 		}
 		LOG_INTERFACE void printf(const char* format,...){}
 		LOG_INTERFACE void dump(const void* buffer,size_t size){}
+
+		//************************************
+		// Method:    AddLog 输入日志
+		// FullName:  acutils::Log::AddLog
+		// Access:    public 
+		// Returns:   LOG_INTERFACE void
+		// Qualifier:
+		// Parameter: int type 日志级别
+		// Parameter: const char * format 要输出的内容
+		// Parameter: ...
+		//************************************
 		LOG_INTERFACE void AddLog(int type, const char* format,...){}
 	};
 
@@ -65,6 +82,9 @@ namespace acoral
 
 	//------------------------------------------------------
 
+	/*
+	 *	控制台日志
+	 */
 	class LogConsole : public Log
 	{
 	public:

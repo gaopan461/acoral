@@ -44,7 +44,7 @@ typedef sint64 int64;
 #define _safe_delete(x) {if(x) {delete x; x = 0;}}
 #define _safe_delete_arrary(x) {if(x){delete [] x; x = 0;}
 
-namespace acoral
+namespace acutils
 {
 	inline void InnerAssert(const char* _strExp, const char* _strFile, sint32 _nLine)
 	{
@@ -54,7 +54,7 @@ namespace acoral
 }
 
 #ifdef  AC_DEBUG
-#define ACCHECK(S) ((S) || (acoral::InnerAssert(#S, __FILE__, __LINE__), 0));
+#define ACCHECK(S) ((S) || (acutils::InnerAssert(#S, __FILE__, __LINE__), 0));
 #else
 #define ACCHECK(S)
 #endif

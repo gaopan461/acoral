@@ -3,7 +3,7 @@
 
 #include "ac_def.h"
 
-namespace acoral
+namespace acutils
 {
 	inline int _min(int x, int y)
 	{

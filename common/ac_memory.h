@@ -2,7 +2,7 @@
 #define _AC_MEMORY_H_
 
 #include "ac_def.h"
-namespace acoral
+namespace acutils
 {
 
 	/*

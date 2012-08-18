@@ -3,8 +3,11 @@
 
 #include "ac_def.h"
 
-namespace acoral
+namespace acutils
 {
+	/*
+	 *	»¥³âËø
+	 */
 	class ThreadGuard
 	{
 	public:

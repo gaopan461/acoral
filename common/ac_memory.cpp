@@ -2,7 +2,7 @@
 #include "ac_thread_guard.h"
 #include "ac_utils.h"
 
-namespace acoral
+namespace acutils
 {
 	SmallMemoryAlloc* SmallMemoryAlloc::m_pInstance = 0;
 	long SmallMemoryAlloc::m_nSingletonGuard = 0;

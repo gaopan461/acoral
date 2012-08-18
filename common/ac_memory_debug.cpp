@@ -2,7 +2,7 @@
 #include "ac_memory.h"
 #include "ac_log.h"
 
-namespace acoral
+namespace acutils
 {
 
 #ifndef AC_DEBUG_MEMORY_ALLOCATOR

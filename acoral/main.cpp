@@ -2,7 +2,7 @@
 #include "ac_log.h"
 #include "ac_memory.h"
 
-class A : public acoral::SmallMemory
+class A : public acutils::SmallMemory
 {
 public:
 	A(int n){m_nNum = n;}
@@ -13,7 +13,7 @@ private:
 
 #define TEST
 
-namespace acoral
+namespace acutils
 {
 	int func()
 	{
@@ -29,11 +29,11 @@ namespace acoral
 int main()
 {
 	int a = 100;
-	acoral::Log::Instance().printf("hello world, a = %d\n",a);
+	acutils::Log::Instance().printf("hello world, a = %d\n",a);
 
 	A* pa = new A(10);
-	acoral::Log::Instance().printf("A pa = %d\n", pa->Get());
-	acoral::func();
+	acutils::Log::Instance().printf("A pa = %d\n", pa->Get());
+	acutils::func();
 
 	DEBUG_MSG("This is a debug message,a = %d\n",a);
 	ERROR_MSG("This is a error message,a = %d\n",a);
