@@ -55,7 +55,6 @@ CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 
 CToolTestDlg::~CToolTestDlg()
 {
-	UnloadPopConfig();
 }
 
 void CToolTestDlg::DoDataExchange(CDataExchange* pDX)
@@ -101,7 +100,7 @@ BOOL CToolTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	LoadPopConfig("ToolTestCfg.xml");
+	LoadPopConfig("ToolTestCfg.lua");
 	InitCommandMap();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -158,7 +157,7 @@ HCURSOR CToolTestDlg::OnQueryDragIcon()
 
 void CToolTestDlg::InitCommandMap()
 {
-	REG_PROPERTY(IDC_LIST1,"testCheck",ORIGIN_STYLE_LISTBOX);
-	REG_PROPERTY(IDC_EDIT1,"testRadio",ORIGIN_STYLE_EDITRADIO);
+	REG_PROPERTY(IDC_LIST1,"TestCheck");
+	REG_PROPERTY(IDC_EDIT1,"TestRadio");
 }
 

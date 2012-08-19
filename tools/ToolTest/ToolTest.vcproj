@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\deps\lua5.1\include&quot;;&quot;$(SolutionDir)..\..\deps\rapidxml-1.13&quot;;&quot;$(SolutionDir)..\common\CheckCombo&quot;;&quot;$(SolutionDir)..\..\common&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\deps\lua5.1\include&quot;;&quot;$(SolutionDir)..\common\CheckCombo&quot;;&quot;$(SolutionDir)..\..\common&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
