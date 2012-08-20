@@ -160,27 +160,30 @@ public:
 	void SetMain(CWnd* pWnd);
 	BOOL Show();
 private:
+	//创建所有配置控件
+	int CreateConfigControls();
+private:
 	int m_nId;
 	CWnd* m_pMainWnd;								//原始控件
 	std::vector<CWnd*> m_vtWnds;					//全部控件
-	std::vector<SPopMain> m_vtPopMains;			//全部控件
+	std::vector<SPopMain> m_vtPopMains;				//全部控件
 };
 
 //===================================================================================
-//存储所有原始控件和xml关联的映射表
-//key为原始空的资源ID，value为原始控件的xml配置名
+//存储所有原始控件和lua配置关联的映射表
+//key为原始空的资源ID，value为原始控件的lua配置名
 typedef std::map<int,CString> CollectionMainConfsT;
 extern CollectionMainConfsT g_mapMainConfs;
 
-//注册原始控件到映射表（将原始控件和xml关联）
+//注册原始控件到映射表（将原始控件和lua配置关联）
 bool REG_PROPERTY(int PID, const char* name);
 
-//xml名字和它对应的弹出窗口
+//配置名字和它对应的弹出窗口
 typedef std::map<CString,SPopConf> CollectionPopConfsT;
 extern CollectionPopConfsT g_mapPopConfs;
 
 //===================================================================================
-//载入xml文件
+//载入配置文件
 bool LoadPopConfig(const std::string& name);
 
 //===================================================================================

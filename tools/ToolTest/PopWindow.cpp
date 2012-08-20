@@ -35,6 +35,7 @@ void CPopWindow::DoDataExchange(CDataExchange* pDX)
 BOOL CPopWindow::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+	CreateConfigControls();
 	return TRUE;
 }
 
@@ -52,6 +53,128 @@ BOOL CPopWindow::Show()
 {
 	DoModal();
 	return TRUE;
+}
+
+int CPopWindow::CreateConfigControls()
+{
+	//控件未关联配置
+	if(g_mapMainConfs.find(m_pMainWnd->GetDlgCtrlID()) == g_mapMainConfs.end())
+		return -1;
+
+	CString strConfName = g_mapMainConfs[m_pMainWnd->GetDlgCtrlID()];
+
+	//无该项配置
+	if(g_mapPopConfs.find(strConfName) == g_mapPopConfs.end())
+		return -2;
+
+	SPopConf& popConf = g_mapPopConfs[strConfName];
+	CString& strConfType = popConf.m_strConfType;
+	DWORD nMainStyle = WS_CHILD | WS_VISIBLE;
+	if(strConfType == "Radio" || strConfType == "RadioWithArg")
+		nMainStyle |= BS_AUTORADIOBUTTON;
+	else if(strConfType == "Check" || strConfType == "CheckWithArg")
+		nMainStyle |= BS_AUTOCHECKBOX;
+	else
+		return -3;
+	
+	//nStartX和nStartY分别记录当前控件的起始坐标
+	int nStartX = 0;
+	int nStartY = 0;
+
+	//遍历并创建主控件
+	for(std::vector<SPopMainConf>::iterator mainConfItem = popConf.m_vtMains.begin(); 
+		mainConfItem != popConf.m_vtMains.end(); 
+		mainConfItem++)
+	{
+		//静态描述文本
+		if(mainConfItem->m_strCtrlType == "Static")
+		{
+			//换到下一行
+			nStartX = 0;
+			nStartY += DEFAULT_HEIGHT;
+
+			CStatic* pStatic = new CStatic();
+			pStatic->Create(mainConfItem->m_strName.GetBuffer(),WS_CHILD|WS_VISIBLE,CRect(nStartX,nStartY,nStartX+mainConfItem->m_nWidth,nStartY+DEFAULT_HEIGHT),this,m_nId++);
+
+			//换到下一行
+			nStartY += DEFAULT_HEIGHT;
+			m_vtWnds.push_back(pStatic);
+			continue;
+		}
+
+		//创建主控件
+		CButton* pMainCtrl = new CButton();
+		pMainCtrl->Create(mainConfItem->m_strName.GetBuffer(),nMainStyle,CRect(nStartX,nStartY,nStartX+mainConfItem->m_nWidth,nStartY+DEFAULT_HEIGHT),this,m_nId++);
+
+		//更新控件起始坐标
+		nStartX += mainConfItem->m_nWidth;
+		m_vtWnds.push_back(pMainCtrl);
+
+		SPopMain popMain;
+		popMain.m_pPopMainConf = &(*mainConfItem);
+		popMain.m_pPopMainWnd = pMainCtrl;
+
+		//遍历并创建参数控件
+		for(std::vector<SPopParamConf>::iterator paramConfItem = mainConfItem->m_vtParams.begin();
+			paramConfItem != mainConfItem->m_vtParams.end();
+			paramConfItem++)
+		{
+			//参数名，静态文本控件
+			CStatic* pParamNameWnd = new CStatic();
+			pParamNameWnd->Create(paramConfItem->m_strName.GetBuffer(),WS_CHILD|WS_VISIBLE,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth,nStartY+DEFAULT_HEIGHT),this,m_nId++);
+			nStartX += paramConfItem->m_nWidth;
+			m_vtWnds.push_back(pParamNameWnd);
+
+			CWnd* pParamWnd = NULL;
+			if(paramConfItem->m_strCtrlType == "Edit")
+			{
+				pParamWnd = new CEdit();
+				pParamWnd->Create("Edit",NULL,WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth1,nStartY+DEFAULT_HEIGHT),this,m_nId++);
+			}
+			else if(paramConfItem->m_strCtrlType == "Combobox")
+			{
+				std::vector<SComboItemConf>& vtComboItemConf = paramConfItem->m_vtComboConf;
+				pParamWnd = new CComboBox();
+				pParamWnd->Create("ComboBox",NULL,WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth1,nStartY+vtComboItemConf.size()*DEFAULT_HEIGHT),this,m_nId++);
+				for (size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
+				{
+					((CComboBox*)pParamWnd)->AddString(vtComboItemConf[comboItemIdx].m_strName.GetBuffer());
+					if(vtComboItemConf[comboItemIdx].m_bChecked)
+						((CComboBox*)pParamWnd)->SetCurSel(comboItemIdx);
+				}
+			}
+			else if(paramConfItem->m_strCtrlType == "CheckCombo")
+			{
+				std::vector<SComboItemConf>& vtComboItemConf = paramConfItem->m_vtComboConf;
+				CCheckComboBox* pCheckComboBox = new CCheckComboBox();
+				pCheckComboBox->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth1,nStartY+vtComboItemConf.size()*DEFAULT_HEIGHT), this, m_nId++);
+				pParamWnd = pCheckComboBox;
+				for (size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
+				{
+					((CCheckComboBox*)pParamWnd)->AddString(vtComboItemConf[comboItemIdx].m_strName.GetBuffer());
+					if(vtComboItemConf[comboItemIdx].m_bChecked)
+						((CCheckComboBox*)pParamWnd)->SetCheck(comboItemIdx, true);
+				}
+			}
+
+			nStartX += paramConfItem->m_nWidth1;
+			m_vtWnds.push_back(pParamWnd);
+			SPopParam popParam;
+			popParam.m_pPopParamConf = &(*paramConfItem);
+			popParam.m_pPopParamWnd = pParamWnd;
+			popMain.m_vtPopParams.push_back(popParam);
+		}
+
+		if(mainConfItem->m_bNewLine)
+		{
+			nStartX = 0;
+			nStartY += DEFAULT_HEIGHT;
+		}
+
+		m_vtPopMains.push_back(popMain);
+	}
+
+	return 0;
 }
 
 // CPopWindow 消息处理程序
