@@ -4,7 +4,7 @@ config = {
 		Confs = {
 			{Name = "测试1", Value = 0, Checked = true,},
 			{Name = "测试2", Value = 1,},
-			{Name = "-------------------gaopan--------------------", CtrlType = "Static",},
+			{Name = "-------------------gaopan--------------------", CtrlType = "Static", Width = 600,},
 			{Name = "测试3", Value = 2,},
 		},
 	},
@@ -13,7 +13,7 @@ config = {
 		Confs = {
 			{Name = "测试1", Value = 0, Checked = true,},
 			{Name = "测试2", Value = 1,},
-			{Name = "-------------------gaopan--------------------", CtrlType = "Static",},
+			{Name = "-------------------gaopan--------------------", CtrlType = "Static", Width = 600,},
 			{
 				Name = "测试3",
 				Value = 2,
@@ -61,7 +61,7 @@ config = {
 		Confs = {
 			{Name = "测试1", Value = 0, Checked = true,},
 			{Name = "测试2", Value = 1,},
-			{Name = "-------------------gaopan--------------------", CtrlType = "Static",},
+			{Name = "-------------------gaopan--------------------", CtrlType = "Static", Width = 600,},
 			{Name = "测试3", Value = 2, Checked = true,},
 		},
 	},
@@ -70,7 +70,7 @@ config = {
 		Confs = {
 			{Name = "测试1", Value = 0, Checked = true,},
 			{Name = "测试2", Value = 1,},
-			{Name = "-------------------gaopan--------------------", CtrlType = "Static",},
+			{Name = "-------------------gaopan--------------------", CtrlType = "Static", Width = 600,},
 			{
 				Name = "测试3",
 				Value = 2,

@@ -161,9 +161,15 @@ public:
 	BOOL Show();
 private:
 	//创建所有配置控件
-	int CreateConfigControls();
+	int CreatePopControl();
+	//创建主控件
+	int CreatePopMainControl(SPopMainConf& mainConf, DWORD nMainStyle);
+	//创建参数控件
+	int CreatePopParamControl(SPopParamConf& paramConf);
 private:
-	int m_nId;
+	int m_nId;										//当前控件ID
+	int m_nStartX;									//当前控件的起始
+	int m_nStartY;									//当前控件的起始
 	CWnd* m_pMainWnd;								//原始控件
 	std::vector<CWnd*> m_vtWnds;					//全部控件
 	std::vector<SPopMain> m_vtPopMains;				//全部控件

@@ -17,6 +17,8 @@ IMPLEMENT_DYNAMIC(CPopWindow, CDialog)
 CPopWindow::CPopWindow(int resID, CWnd* pParent /*=NULL*/)
 	: CDialog(resID, pParent)
 	, m_nId(USER_CTRL_ID_START)
+	, m_nStartX(0)
+	, m_nStartY(0)
 {
 
 }
@@ -35,7 +37,7 @@ void CPopWindow::DoDataExchange(CDataExchange* pDX)
 BOOL CPopWindow::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	CreateConfigControls();
+	CreatePopControl();
 	return TRUE;
 }
 
@@ -55,7 +57,126 @@ BOOL CPopWindow::Show()
 	return TRUE;
 }
 
-int CPopWindow::CreateConfigControls()
+int CPopWindow::CreatePopParamControl(SPopParamConf& paramConf)
+{
+	//参数名，静态文本控件
+	CStatic* pParamNameWnd = new CStatic();
+	pParamNameWnd->Create(paramConf.m_strName.GetBuffer(),
+		WS_CHILD|WS_VISIBLE,
+		CRect(m_nStartX,m_nStartY,m_nStartX+paramConf.m_nWidth,m_nStartY+DEFAULT_HEIGHT),
+		this,
+		m_nId++);
+
+	//更新控件的起始坐标
+	m_nStartX += paramConf.m_nWidth;
+	m_vtWnds.push_back(pParamNameWnd);
+
+	CWnd* pParamWnd = NULL;
+	if(paramConf.m_strCtrlType == "Edit")
+	{
+		CEdit* pEdit = new CEdit();
+		pEdit->Create(WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER,
+			CRect(m_nStartX,m_nStartY,m_nStartX+paramConf.m_nWidth1,m_nStartY+DEFAULT_HEIGHT),
+			this,
+			m_nId++);
+
+		pParamWnd = pEdit;
+	}
+	else if(paramConf.m_strCtrlType == "Combobox")
+	{
+		std::vector<SComboItemConf>& vtComboItemConf = paramConf.m_vtComboConf;
+		CComboBox* pComboBox = new CComboBox();
+		pComboBox->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,
+			CRect(m_nStartX,m_nStartY,m_nStartX+paramConf.m_nWidth1,m_nStartY+(vtComboItemConf.size()+1)*DEFAULT_HEIGHT),
+			this,
+			m_nId++);
+
+		//添加combobox的选项
+		for(size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
+			pComboBox->AddString(vtComboItemConf[comboItemIdx].m_strName.GetBuffer());
+
+		//选中默认值
+		for(size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
+		{
+			if(vtComboItemConf[comboItemIdx].m_bChecked)
+			{
+				pComboBox->SetCurSel(comboItemIdx);
+				break;
+			}
+		}
+
+		pParamWnd = pComboBox;
+	}
+	else if(paramConf.m_strCtrlType == "CheckCombo")
+	{
+		std::vector<SComboItemConf>& vtComboItemConf = paramConf.m_vtComboConf;
+		CCheckComboBox* pCheckComboBox = new CCheckComboBox();
+		pCheckComboBox->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,
+			CRect(m_nStartX,m_nStartY,m_nStartX+paramConf.m_nWidth1,m_nStartY+(vtComboItemConf.size()+1)*DEFAULT_HEIGHT), 
+			this, 
+			m_nId++);
+		
+		//添加checkcombo的选项
+		for(size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
+			pCheckComboBox->AddString(vtComboItemConf[comboItemIdx].m_strName.GetBuffer());
+
+		//选中默认值
+		for(size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
+		{
+			if(vtComboItemConf[comboItemIdx].m_bChecked)
+				pCheckComboBox->SetCheck(comboItemIdx, true);
+		}
+
+		pParamWnd = pCheckComboBox;
+	}
+	else
+		return -1;
+
+	//更新控件的起始坐标
+	m_nStartX += paramConf.m_nWidth1;
+	m_vtWnds.push_back(pParamWnd);
+
+	SPopParam popParam;
+	popParam.m_pPopParamConf = &paramConf;
+	popParam.m_pPopParamWnd = pParamWnd;
+	m_vtPopMains.back().m_vtPopParams.push_back(popParam);
+	return 0;
+}
+
+int CPopWindow::CreatePopMainControl(SPopMainConf& mainConf, DWORD nMainStyle)
+{
+	//创建主控件
+	CButton* pMainCtrl = new CButton();
+	pMainCtrl->Create(mainConf.m_strName.GetBuffer(),
+		nMainStyle,
+		CRect(m_nStartX,m_nStartY,m_nStartX+mainConf.m_nWidth,m_nStartY+DEFAULT_HEIGHT),
+		this,
+		m_nId++);
+
+	//更新控件起始坐标
+	m_nStartX += mainConf.m_nWidth;
+	m_vtWnds.push_back(pMainCtrl);
+
+	SPopMain popMain;
+	popMain.m_pPopMainConf = &mainConf;
+	popMain.m_pPopMainWnd = pMainCtrl;
+	m_vtPopMains.push_back(popMain);
+
+	//遍历并创建参数控件
+	std::vector<SPopParamConf>& vtParamConf = mainConf.m_vtParams;
+	for(size_t paramConfIdx = 0; paramConfIdx < vtParamConf.size(); paramConfIdx++)
+		CreatePopParamControl(vtParamConf[paramConfIdx]);
+
+	if(mainConf.m_bNewLine)
+	{
+		m_nStartX = 0;
+		m_nStartY += DEFAULT_HEIGHT;
+	}
+
+	return 0;
+}
+
+int CPopWindow::CreatePopControl()
 {
 	//控件未关联配置
 	if(g_mapMainConfs.find(m_pMainWnd->GetDlgCtrlID()) == g_mapMainConfs.end())
@@ -76,102 +197,32 @@ int CPopWindow::CreateConfigControls()
 		nMainStyle |= BS_AUTOCHECKBOX;
 	else
 		return -3;
-	
-	//nStartX和nStartY分别记录当前控件的起始坐标
-	int nStartX = 0;
-	int nStartY = 0;
 
 	//遍历并创建主控件
-	for(std::vector<SPopMainConf>::iterator mainConfItem = popConf.m_vtMains.begin(); 
-		mainConfItem != popConf.m_vtMains.end(); 
-		mainConfItem++)
+	std::vector<SPopMainConf>& vtMainConf = popConf.m_vtMains;
+	for(size_t mainConfIdx = 0; mainConfIdx < vtMainConf.size(); mainConfIdx++)
 	{
 		//静态描述文本
-		if(mainConfItem->m_strCtrlType == "Static")
+		if(vtMainConf[mainConfIdx].m_strCtrlType == "Static")
 		{
 			//换到下一行
-			nStartX = 0;
-			nStartY += DEFAULT_HEIGHT;
+			m_nStartX = 0;
+			m_nStartY += DEFAULT_HEIGHT;
 
 			CStatic* pStatic = new CStatic();
-			pStatic->Create(mainConfItem->m_strName.GetBuffer(),WS_CHILD|WS_VISIBLE,CRect(nStartX,nStartY,nStartX+mainConfItem->m_nWidth,nStartY+DEFAULT_HEIGHT),this,m_nId++);
+			pStatic->Create(vtMainConf[mainConfIdx].m_strName.GetBuffer(),
+				WS_CHILD|WS_VISIBLE,
+				CRect(m_nStartX,m_nStartY,m_nStartX+vtMainConf[mainConfIdx].m_nWidth,m_nStartY+DEFAULT_HEIGHT),
+				this,
+				m_nId++);
 
 			//换到下一行
-			nStartY += DEFAULT_HEIGHT;
+			m_nStartY += DEFAULT_HEIGHT;
 			m_vtWnds.push_back(pStatic);
 			continue;
 		}
 
-		//创建主控件
-		CButton* pMainCtrl = new CButton();
-		pMainCtrl->Create(mainConfItem->m_strName.GetBuffer(),nMainStyle,CRect(nStartX,nStartY,nStartX+mainConfItem->m_nWidth,nStartY+DEFAULT_HEIGHT),this,m_nId++);
-
-		//更新控件起始坐标
-		nStartX += mainConfItem->m_nWidth;
-		m_vtWnds.push_back(pMainCtrl);
-
-		SPopMain popMain;
-		popMain.m_pPopMainConf = &(*mainConfItem);
-		popMain.m_pPopMainWnd = pMainCtrl;
-
-		//遍历并创建参数控件
-		for(std::vector<SPopParamConf>::iterator paramConfItem = mainConfItem->m_vtParams.begin();
-			paramConfItem != mainConfItem->m_vtParams.end();
-			paramConfItem++)
-		{
-			//参数名，静态文本控件
-			CStatic* pParamNameWnd = new CStatic();
-			pParamNameWnd->Create(paramConfItem->m_strName.GetBuffer(),WS_CHILD|WS_VISIBLE,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth,nStartY+DEFAULT_HEIGHT),this,m_nId++);
-			nStartX += paramConfItem->m_nWidth;
-			m_vtWnds.push_back(pParamNameWnd);
-
-			CWnd* pParamWnd = NULL;
-			if(paramConfItem->m_strCtrlType == "Edit")
-			{
-				pParamWnd = new CEdit();
-				pParamWnd->Create("Edit",NULL,WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_BORDER,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth1,nStartY+DEFAULT_HEIGHT),this,m_nId++);
-			}
-			else if(paramConfItem->m_strCtrlType == "Combobox")
-			{
-				std::vector<SComboItemConf>& vtComboItemConf = paramConfItem->m_vtComboConf;
-				pParamWnd = new CComboBox();
-				pParamWnd->Create("ComboBox",NULL,WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth1,nStartY+vtComboItemConf.size()*DEFAULT_HEIGHT),this,m_nId++);
-				for (size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
-				{
-					((CComboBox*)pParamWnd)->AddString(vtComboItemConf[comboItemIdx].m_strName.GetBuffer());
-					if(vtComboItemConf[comboItemIdx].m_bChecked)
-						((CComboBox*)pParamWnd)->SetCurSel(comboItemIdx);
-				}
-			}
-			else if(paramConfItem->m_strCtrlType == "CheckCombo")
-			{
-				std::vector<SComboItemConf>& vtComboItemConf = paramConfItem->m_vtComboConf;
-				CCheckComboBox* pCheckComboBox = new CCheckComboBox();
-				pCheckComboBox->Create(WS_CHILD|WS_VISIBLE|WS_VSCROLL|CBS_DROPDOWNLIST,CRect(nStartX,nStartY,nStartX+paramConfItem->m_nWidth1,nStartY+vtComboItemConf.size()*DEFAULT_HEIGHT), this, m_nId++);
-				pParamWnd = pCheckComboBox;
-				for (size_t comboItemIdx = 0; comboItemIdx < vtComboItemConf.size(); comboItemIdx++)
-				{
-					((CCheckComboBox*)pParamWnd)->AddString(vtComboItemConf[comboItemIdx].m_strName.GetBuffer());
-					if(vtComboItemConf[comboItemIdx].m_bChecked)
-						((CCheckComboBox*)pParamWnd)->SetCheck(comboItemIdx, true);
-				}
-			}
-
-			nStartX += paramConfItem->m_nWidth1;
-			m_vtWnds.push_back(pParamWnd);
-			SPopParam popParam;
-			popParam.m_pPopParamConf = &(*paramConfItem);
-			popParam.m_pPopParamWnd = pParamWnd;
-			popMain.m_vtPopParams.push_back(popParam);
-		}
-
-		if(mainConfItem->m_bNewLine)
-		{
-			nStartX = 0;
-			nStartY += DEFAULT_HEIGHT;
-		}
-
-		m_vtPopMains.push_back(popMain);
+		CreatePopMainControl(vtMainConf[mainConfIdx], nMainStyle);
 	}
 
 	return 0;
