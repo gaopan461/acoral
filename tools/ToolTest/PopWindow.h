@@ -159,6 +159,7 @@ public:
 public:
 	void SetMain(CWnd* pWnd);
 	BOOL Show();
+	std::vector<SPopMain>& GetPopMains();
 private:
 	//创建所有配置控件
 	int CreatePopControl();
@@ -191,6 +192,18 @@ extern CollectionPopConfsT g_mapPopConfs;
 //===================================================================================
 //载入配置文件
 bool LoadPopConfig(const std::string& name);
+
+//配置数据转到主窗口的控件上
+int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd);
+
+//主窗口控件的数据转到配置窗口上
+int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd);
+
+//主窗口控件的数据转到数据库中
+int MainToDB(CWnd* pMainWnd, lua_State* L, std::string& strName);
+
+//数据库中的数据转到主窗口控件
+int DBToMain(lua_State* L, std::string& strName, CWnd* pMainWnd);
 
 //===================================================================================
 void ConvertGBKToUTF8(CString& strGBK);

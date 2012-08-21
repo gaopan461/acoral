@@ -380,7 +380,7 @@ void CCheckComboBox::RecalcText()
 		CString strSeparator = "`";
 
 		// And one...
-		strSeparator += ' ';
+		//strSeparator += ' ';
 
 		for (INT i = 0; i < nCount; i++) {
 

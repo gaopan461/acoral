@@ -57,6 +57,11 @@ BOOL CPopWindow::Show()
 	return TRUE;
 }
 
+std::vector<SPopMain>& CPopWindow::GetPopMains()
+{
+	return m_vtPopMains;
+}
+
 int CPopWindow::CreatePopParamControl(SPopParamConf& paramConf)
 {
 	//参数名，静态文本控件
@@ -170,7 +175,7 @@ int CPopWindow::CreatePopMainControl(SPopMainConf& mainConf, DWORD nMainStyle)
 	if(mainConf.m_bNewLine)
 	{
 		m_nStartX = 0;
-		m_nStartY += DEFAULT_HEIGHT;
+		m_nStartY += DEFAULT_HEIGHT + DEFAULT_HEIGHT_INTER;
 	}
 
 	return 0;
@@ -205,10 +210,6 @@ int CPopWindow::CreatePopControl()
 		//静态描述文本
 		if(vtMainConf[mainConfIdx].m_strCtrlType == "Static")
 		{
-			//换到下一行
-			m_nStartX = 0;
-			m_nStartY += DEFAULT_HEIGHT;
-
 			CStatic* pStatic = new CStatic();
 			pStatic->Create(vtMainConf[mainConfIdx].m_strName.GetBuffer(),
 				WS_CHILD|WS_VISIBLE,
@@ -217,7 +218,11 @@ int CPopWindow::CreatePopControl()
 				m_nId++);
 
 			//换到下一行
-			m_nStartY += DEFAULT_HEIGHT;
+			if(vtMainConf[mainConfIdx].m_bNewLine)
+			{
+				m_nStartX = 0;
+				m_nStartY += DEFAULT_HEIGHT + DEFAULT_HEIGHT_INTER;
+			}
 			m_vtWnds.push_back(pStatic);
 			continue;
 		}
@@ -236,10 +241,12 @@ afx_msg void CPopWindow::OnClose()
 
 afx_msg void CPopWindow::OnRButtonDown(UINT nFlags, CPoint point)
 {
+	PopToMain(this, m_pMainWnd);
 	CDialog::EndDialog(IDOK);
 }
 
 //===================================================================================
+
 CollectionMainConfsT g_mapMainConfs;
 
 bool REG_PROPERTY(int PID, const char* name)
@@ -250,9 +257,12 @@ bool REG_PROPERTY(int PID, const char* name)
 }
 
 //===================================================================================
+
 CollectionPopConfsT g_mapPopConfs;
 
 //===================================================================================
+
+//载入combobox或checkcombo选项
 void GetComboItemConf(lua_State* L, SComboItemConf& comboItemConf)
 {
 	lua_getfield(L, -1, "Name");
@@ -272,6 +282,7 @@ void GetComboItemConf(lua_State* L, SComboItemConf& comboItemConf)
 	lua_pop(L, 1);
 }
 
+//载入参数控件配置
 void GetPopParamConf(lua_State* L, SPopParamConf& popParamConf)
 {
 	lua_getfield(L, -1, "CtrlType");
@@ -323,6 +334,7 @@ void GetPopParamConf(lua_State* L, SPopParamConf& popParamConf)
 		lua_getfield(L, -1, "Confs");
 		ASSERT(lua_type(L, -1) == LUA_TTABLE);
 
+		//遍历combobox或checkcombo的选项
 		lua_pushnil(L);
 		while(lua_next(L, -2) != 0)
 		{
@@ -337,6 +349,7 @@ void GetPopParamConf(lua_State* L, SPopParamConf& popParamConf)
 	}
 }
 
+//载入主控件配置
 void GetPopMainConf(lua_State* L, SPopMainConf& popMainConf)
 {
 	lua_getfield(L, -1, "Name");
@@ -384,6 +397,7 @@ void GetPopMainConf(lua_State* L, SPopMainConf& popMainConf)
 	lua_getfield(L, -1, "Params");
 	if(lua_type(L, -1) == LUA_TTABLE)
 	{
+		//遍历参数控件
 		lua_pushnil(L);
 		while(lua_next(L, -2) != 0)
 		{
@@ -398,6 +412,7 @@ void GetPopMainConf(lua_State* L, SPopMainConf& popMainConf)
 
 }
 
+//载入一个配置
 void GetPopConf(lua_State* L, SPopConf& popConf)
 {
 	lua_getfield(L, -1, "ConfType");
@@ -451,6 +466,107 @@ bool LoadPopConfig(const std::string& name)
 }
 
 //===================================================================================
+
+//将参数控件转换成记录
+int PopParamToText(SPopParam& popParam, CString& strParamText)
+{
+	CString strCtrlText;
+	popParam.m_pPopParamWnd->GetWindowText(strCtrlText);
+	strParamText = popParam.m_pPopParamConf->m_strName + "=" + strCtrlText;
+
+	return 0;
+}
+
+//将一行配置（包括一个主控件和多个参数控件）转成一条记录
+int PopMainToText(SPopMain& popMain, CString& strMainText)
+{
+	bool isChecked = ((CButton*)popMain.m_pPopMainWnd)->GetCheck();
+	if(!isChecked)
+		return -1;
+
+	//转换主控件
+	strMainText = popMain.m_pPopMainConf->m_strName;
+	if(!popMain.m_vtPopParams.empty())
+		strMainText += ":";
+
+	//依次转换所有参数控件
+	for(size_t paramIdx = 0; paramIdx < popMain.m_vtPopParams.size(); paramIdx++)
+	{
+		CString strParamText;
+		if(PopParamToText(popMain.m_vtPopParams[paramIdx], strParamText) == 0)
+			strMainText += strParamText;
+
+		//不是最后一个参数
+		if(paramIdx < (popMain.m_vtPopParams.size() - 1))
+			strMainText += ",";
+	}
+
+	return 0;
+}
+
+int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd)
+{
+	ASSERT(pPopWnd && pMainWnd);
+	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
+	
+	CHAR szClass[128];   
+	GetClassName(pMainWnd->GetSafeHwnd(), szClass, 127);   
+	if(lstrcmpi(szClass, "Edit")==0)
+	{
+		//原始控件为编辑框，弹出窗口产生的每条记录通过"|"分隔
+		CString strText;
+		for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+		{
+			CString strMainText;
+			if(PopMainToText(vtPopMains[mainIdx], strMainText) == 0)
+			{
+				if(strText.IsEmpty())
+					strText = strMainText;
+				else
+					strText = strText + "|" + strMainText;
+			}
+		}
+
+		((CEdit*)pMainWnd)->SetWindowText(strText.GetBuffer());
+	}
+	else if(lstrcmpi(szClass, "ListBox")==0)
+	{
+		//原始控件为列表框，弹出窗口的每行配置转为列表框中的一条记录
+		((CListBox*)pMainWnd)->ResetContent();
+		for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+		{
+			CString strMainText;
+			if(PopMainToText(vtPopMains[mainIdx], strMainText) == 0)
+				((CListBox*)pMainWnd)->AddString(strMainText.GetBuffer());
+		}
+	}
+
+	return 0;
+}
+
+//===================================================================================
+
+int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
+{
+	return 0;
+}
+
+//===================================================================================
+
+int MainToDB(CWnd* pMainWnd, lua_State* L, std::string& strName)
+{
+	return 0;
+}
+
+//===================================================================================
+
+int DBToMain(lua_State* L, std::string& strName, CWnd* pMainWnd)
+{
+	return 0;
+}
+
+//===================================================================================
+
 void ConvertGBKToUTF8(CString& strGBK)
 {
 	int len = MultiByteToWideChar(CP_ACP, 0, (LPCTSTR)strGBK, -1, NULL, 0);
