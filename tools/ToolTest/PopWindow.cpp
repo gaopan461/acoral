@@ -38,6 +38,7 @@ BOOL CPopWindow::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 	CreatePopControl();
+	MainToPop(m_pMainWnd,this);
 	return TRUE;
 }
 
@@ -540,14 +541,199 @@ int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd)
 				((CListBox*)pMainWnd)->AddString(strMainText.GetBuffer());
 		}
 	}
+	else
+		return -1;
 
 	return 0;
 }
 
 //===================================================================================
 
+//将记录转换成参数控件上的配置
+int TextToPopParam(CString& strItemText, SPopParam& popParam)
+{
+	//参数名和参数值通过=隔开
+	int paramNamePos = strItemText.FindOneOf("=");
+	if(paramNamePos != -1)
+	{
+		CString strParamName = strItemText.Left(paramNamePos);
+		CString strParamValues = strItemText.Mid(paramNamePos + 1);
+
+		//参数名不匹配
+		if(strParamName != popParam.m_pPopParamConf->m_strName)
+			return -1;
+
+		std::vector<CString> vtParamValueTexts;
+		CString strItemText;
+		int nParamValuePos = 0;
+		//每个参数控件通过,隔开
+		strItemText = strParamValues.Tokenize(_T("`"),nParamValuePos);
+		while (strItemText != _T(""))
+		{
+			vtParamValueTexts.push_back(strItemText);
+			strItemText = strParamValues.Tokenize(_T("`"), nParamValuePos);
+		};
+
+		if(vtParamValueTexts.empty())
+			return 0;
+
+		if(popParam.m_pPopParamConf->m_strCtrlType == "Edit")
+			((CEdit*)(popParam.m_pPopParamWnd))->SetWindowText(vtParamValueTexts[0].GetBuffer());
+		else if(popParam.m_pPopParamConf->m_strCtrlType == "Combobox")
+		{
+			for(size_t comboIdx = 0; comboIdx < popParam.m_pPopParamConf->m_vtComboConf.size(); comboIdx++)
+			{
+				if(popParam.m_pPopParamConf->m_vtComboConf[comboIdx].m_strName == vtParamValueTexts[0])
+				{
+					((CComboBox*)(popParam.m_pPopParamWnd))->SetCurSel(comboIdx);
+					break;
+				}
+			}
+		}
+		else if(popParam.m_pPopParamConf->m_strCtrlType == "CheckCombo")
+		{
+			for(size_t paramValueIdx = 0; paramValueIdx < vtParamValueTexts.size(); paramValueIdx++)
+			{
+				for(size_t comboIdx = 0; comboIdx < popParam.m_pPopParamConf->m_vtComboConf.size(); comboIdx++)
+				{
+					if(popParam.m_pPopParamConf->m_vtComboConf[comboIdx].m_strName == vtParamValueTexts[paramValueIdx])
+					{
+						((CCheckComboBox*)(popParam.m_pPopParamWnd))->SetCheck(comboIdx, true);
+						break;
+					}
+				}
+			}
+		}
+		else
+			return -1;
+	}
+
+	return 0;
+}
+
+//参数控件全部清除
+int ClearPopParams(SPopMain& popMain)
+{
+	for(size_t paramIdx = 0; paramIdx < popMain.m_vtPopParams.size(); paramIdx++)
+	{
+		if(popMain.m_vtPopParams[paramIdx].m_pPopParamConf->m_strCtrlType == "Edit")
+			((CEdit*)(popMain.m_vtPopParams[paramIdx].m_pPopParamWnd))->SetWindowText("");
+		else if(popMain.m_vtPopParams[paramIdx].m_pPopParamConf->m_strCtrlType == "Combobox")
+			((CComboBox*)(popMain.m_vtPopParams[paramIdx].m_pPopParamWnd))->SetCurSel(-1);
+		else if(popMain.m_vtPopParams[paramIdx].m_pPopParamConf->m_strCtrlType == "CheckCombo")
+			((CCheckComboBox*)(popMain.m_vtPopParams[paramIdx].m_pPopParamWnd))->SelectAll(false);
+	}
+
+	return 0;
+}
+
+//将一条记录转成一行配置（包括一个主控件和多个参数控件）
+int TextToPopMain(CString& strItemText, CPopWindow* pPopWnd)
+{
+	ASSERT(pPopWnd);
+	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
+
+	//主控件和参数控件通过:隔开
+	int nMainPos = strItemText.FindOneOf(":");
+	if(nMainPos != -1)
+	{
+		CString strMainText = strItemText.Left(nMainPos);
+		CString strParamsText = strItemText.Mid(nMainPos + 1);
+
+		//查找匹配的主控件
+		for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+		{
+			if(vtPopMains[mainIdx].m_pPopMainConf->m_strName == strMainText)
+			{
+				std::vector<CString> vtParamTexts;
+				CString strItemText;
+				int nParamPos = 0;
+				//每个参数控件通过,隔开
+				strItemText = strParamsText.Tokenize(_T(","),nParamPos);
+				while (strItemText != _T(""))
+				{
+					vtParamTexts.push_back(strItemText);
+					strItemText = strParamsText.Tokenize(_T(","), nParamPos);
+				};
+
+				//参数控件个数不匹配
+				if(vtParamTexts.size() != vtPopMains[mainIdx].m_vtPopParams.size())
+					return -1;
+
+				//主控件选中
+				((CButton*)(vtPopMains[mainIdx].m_pPopMainWnd))->SetCheck(1);
+
+				//参数控件全部清除
+				ClearPopParams(vtPopMains[mainIdx]);
+
+				//设置参数控件的值
+				for(size_t paramIdx = 0; paramIdx < vtPopMains[mainIdx].m_vtPopParams.size(); paramIdx++)
+					TextToPopParam(vtParamTexts[paramIdx], vtPopMains[mainIdx].m_vtPopParams[paramIdx]);
+
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+
+//将主控件全设置为未选中
+int ClearPopMains(CPopWindow* pPopWnd)
+{
+	ASSERT(pPopWnd);
+	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
+
+	for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+		((CButton*)(vtPopMains[mainIdx].m_pPopMainWnd))->SetCheck(0);
+
+	return 0;
+}
+
 int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
 {
+	ASSERT(pPopWnd && pMainWnd);
+	CHAR szClass[128];   
+	GetClassName(pMainWnd->GetSafeHwnd(), szClass, 127);   
+	if(lstrcmpi(szClass, "Edit")==0)
+	{
+		CString strText;
+		((CEdit*)pMainWnd)->GetWindowText(strText);
+		if(strText.IsEmpty())
+			return -1;
+
+		//先清空配置控件的默认值
+		ClearPopMains(pPopWnd);
+
+		CString strItemText;
+		int nMainPos = 0;
+		//每一行控件通过|隔开
+		strItemText = strText.Tokenize(_T("|"),nMainPos);
+		while (strItemText != _T(""))
+		{
+			TextToPopMain(strItemText, pPopWnd);
+			strItemText = strText.Tokenize(_T("|"), nMainPos);
+		};
+	}
+	else if(lstrcmpi(szClass, "ListBox")==0)
+	{
+		if(((CListBox*)pMainWnd)->GetCount() <= 0)
+			return -1;
+
+		//先清空配置控件的默认值
+		ClearPopMains(pPopWnd);
+
+		//设置主控件的值
+		CString strItemText;
+		for(int idx = 0; idx < ((CListBox*)pMainWnd)->GetCount(); idx++)
+		{
+			((CListBox*)pMainWnd)->GetText(idx,strItemText);
+			TextToPopMain(strItemText, pPopWnd);
+		}
+	}
+	else
+		return -1;
+
 	return 0;
 }
 
