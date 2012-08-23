@@ -200,10 +200,10 @@ int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd);
 int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd);
 
 //主窗口控件的数据转到数据库中
-int MainToDB(CWnd* pMainWnd, lua_State* L, std::string& strName);
+int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName);
 
 //数据库中的数据转到主窗口控件
-int DBToMain(lua_State* L, std::string& strName, CWnd* pMainWnd);
+int DBToMain(lua_State* L, const std::string& strName, CWnd* pMainWnd);
 
 //===================================================================================
 void ConvertGBKToUTF8(CString& strGBK);

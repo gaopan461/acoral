@@ -550,7 +550,7 @@ int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd)
 //===================================================================================
 
 //将记录转换成参数控件上的配置
-int TextToPopParam(CString& strItemText, SPopParam& popParam)
+int TextToPopParam(const CString& strItemText, SPopParam& popParam)
 {
 	//参数名和参数值通过=隔开
 	int paramNamePos = strItemText.FindOneOf("=");
@@ -628,7 +628,7 @@ int ClearPopParams(SPopMain& popMain)
 }
 
 //将一条记录转成一行配置（包括一个主控件和多个参数控件）
-int TextToPopMain(CString& strItemText, CPopWindow* pPopWnd)
+int TextToPopMain(const CString& strItemText, CPopWindow* pPopWnd)
 {
 	ASSERT(pPopWnd);
 	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
@@ -744,14 +744,14 @@ int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
 
 //===================================================================================
 
-int MainToDB(CWnd* pMainWnd, lua_State* L, std::string& strName)
+int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 {
 	return 0;
 }
 
 //===================================================================================
 
-int DBToMain(lua_State* L, std::string& strName, CWnd* pMainWnd)
+int DBToMain(lua_State* L, const std::string& strName, CWnd* pMainWnd)
 {
 	return 0;
 }
