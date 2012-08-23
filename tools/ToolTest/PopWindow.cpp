@@ -633,45 +633,50 @@ int TextToPopMain(CString& strItemText, CPopWindow* pPopWnd)
 	ASSERT(pPopWnd);
 	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
 
+	CString strMainText;
+	CString strParamsText;
+
 	//主控件和参数控件通过:隔开
 	int nMainPos = strItemText.FindOneOf(":");
 	if(nMainPos != -1)
 	{
-		CString strMainText = strItemText.Left(nMainPos);
-		CString strParamsText = strItemText.Mid(nMainPos + 1);
+		strMainText = strItemText.Left(nMainPos);
+		strParamsText = strItemText.Mid(nMainPos + 1);
+	}
+	else
+		strMainText = strItemText;
 
-		//查找匹配的主控件
-		for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+	//查找匹配的主控件
+	for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+	{
+		if(vtPopMains[mainIdx].m_pPopMainConf->m_strName == strMainText)
 		{
-			if(vtPopMains[mainIdx].m_pPopMainConf->m_strName == strMainText)
+			std::vector<CString> vtParamTexts;
+			CString strItemText;
+			int nParamPos = 0;
+			//每个参数控件通过,隔开
+			strItemText = strParamsText.Tokenize(_T(","),nParamPos);
+			while (strItemText != _T(""))
 			{
-				std::vector<CString> vtParamTexts;
-				CString strItemText;
-				int nParamPos = 0;
-				//每个参数控件通过,隔开
-				strItemText = strParamsText.Tokenize(_T(","),nParamPos);
-				while (strItemText != _T(""))
-				{
-					vtParamTexts.push_back(strItemText);
-					strItemText = strParamsText.Tokenize(_T(","), nParamPos);
-				};
+				vtParamTexts.push_back(strItemText);
+				strItemText = strParamsText.Tokenize(_T(","), nParamPos);
+			};
 
-				//参数控件个数不匹配
-				if(vtParamTexts.size() != vtPopMains[mainIdx].m_vtPopParams.size())
-					return -1;
+			//参数控件个数不匹配
+			if(vtParamTexts.size() != vtPopMains[mainIdx].m_vtPopParams.size())
+				return -1;
 
-				//主控件选中
-				((CButton*)(vtPopMains[mainIdx].m_pPopMainWnd))->SetCheck(1);
+			//主控件选中
+			((CButton*)(vtPopMains[mainIdx].m_pPopMainWnd))->SetCheck(1);
 
-				//参数控件全部清除
-				ClearPopParams(vtPopMains[mainIdx]);
+			//参数控件全部清除
+			ClearPopParams(vtPopMains[mainIdx]);
 
-				//设置参数控件的值
-				for(size_t paramIdx = 0; paramIdx < vtPopMains[mainIdx].m_vtPopParams.size(); paramIdx++)
-					TextToPopParam(vtParamTexts[paramIdx], vtPopMains[mainIdx].m_vtPopParams[paramIdx]);
+			//设置参数控件的值
+			for(size_t paramIdx = 0; paramIdx < vtPopMains[mainIdx].m_vtPopParams.size(); paramIdx++)
+				TextToPopParam(vtParamTexts[paramIdx], vtPopMains[mainIdx].m_vtPopParams[paramIdx]);
 
-				break;
-			}
+			break;
 		}
 	}
 
