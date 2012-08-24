@@ -17,6 +17,7 @@ IMPLEMENT_DYNAMIC(CPopWindow, CDialog)
 CPopWindow::CPopWindow(int resID, CWnd* pParent /*=NULL*/)
 	: CDialog(resID, pParent)
 	, m_nId(USER_CTRL_ID_START)
+	, m_pMainWnd(pParent)
 	, m_nStartX(0)
 	, m_nStartY(0)
 {
@@ -46,11 +47,6 @@ BEGIN_MESSAGE_MAP(CPopWindow, CDialog)
 	ON_WM_CLOSE()
 	ON_WM_RBUTTONDOWN()
 END_MESSAGE_MAP()
-
-void CPopWindow::SetMain(CWnd* pWnd)
-{
-	m_pMainWnd = pWnd;
-}
 
 BOOL CPopWindow::Show()
 {
@@ -695,20 +691,15 @@ int ClearPopMains(CPopWindow* pPopWnd)
 	return 0;
 }
 
-int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
+//将主控件上的内容转成一行行的主配置文本
+int MainToMainTexts(CWnd* pMainWnd, std::vector<CString>& vtMainTexts)
 {
-	ASSERT(pPopWnd && pMainWnd);
-	CHAR szClass[128];   
+	CHAR szClass[128];
 	GetClassName(pMainWnd->GetSafeHwnd(), szClass, 127);   
 	if(lstrcmpi(szClass, "Edit")==0)
 	{
 		CString strText;
 		((CEdit*)pMainWnd)->GetWindowText(strText);
-		if(strText.IsEmpty())
-			return -1;
-
-		//先清空配置控件的默认值
-		ClearPopMains(pPopWnd);
 
 		CString strItemText;
 		int nMainPos = 0;
@@ -716,24 +707,18 @@ int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
 		strItemText = strText.Tokenize(_T("|"),nMainPos);
 		while (strItemText != _T(""))
 		{
-			TextToPopMain(strItemText, pPopWnd);
+			vtMainTexts.push_back(strItemText);
 			strItemText = strText.Tokenize(_T("|"), nMainPos);
 		};
 	}
 	else if(lstrcmpi(szClass, "ListBox")==0)
 	{
-		if(((CListBox*)pMainWnd)->GetCount() <= 0)
-			return -1;
-
-		//先清空配置控件的默认值
-		ClearPopMains(pPopWnd);
-
 		//设置主控件的值
 		CString strItemText;
 		for(int idx = 0; idx < ((CListBox*)pMainWnd)->GetCount(); idx++)
 		{
 			((CListBox*)pMainWnd)->GetText(idx,strItemText);
-			TextToPopMain(strItemText, pPopWnd);
+			vtMainTexts.push_back(strItemText);
 		}
 	}
 	else
@@ -742,10 +727,79 @@ int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
 	return 0;
 }
 
+int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
+{
+	ASSERT(pPopWnd && pMainWnd);
+	std::vector<CString> vtMainTexts;
+	if(MainToMainTexts(pMainWnd, vtMainTexts) != 0)
+		return -1;
+	
+	//为空，使用弹出配置的默认值
+	if(vtMainTexts.empty())
+		return 0;
+
+	//先清空配置控件的默认值
+	ClearPopMains(pPopWnd);
+
+	//将每行值写到弹出主控件上
+	for(size_t idx = 0; idx < vtMainTexts.size(); idx++)
+		TextToPopMain(vtMainTexts[idx], pPopWnd);
+
+	return 0;
+}
+
 //===================================================================================
+
+int RadioToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+{
+	return 0;
+}
+
+int RadioWithArgToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+{
+	return 0;
+}
+
+int CheckToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+{
+	return 0;
+}
+
+int CheckWithArgToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+{
+	return 0;
+}
 
 int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 {
+	ASSERT(pMainWnd && L);
+	if(g_mapMainConfs.find(pMainWnd->GetDlgCtrlID()) == g_mapMainConfs.end())
+		return -1;
+
+	CString strXmlName = g_mapMainConfs[pMainWnd->GetDlgCtrlID()];
+	if(g_mapPopConfs.find(strXmlName) == g_mapPopConfs.end())
+		return -2;
+
+	SPopConf& popConf = g_mapPopConfs[strXmlName];
+
+	std::vector<CString> vtMainTexts;
+	if(MainToMainTexts(pMainWnd, vtMainTexts) != 0)
+		return -3;
+
+
+
+	CString strConfType = popConf.m_strConfType;
+	if(strConfType == "Radio")
+		RadioToDB(popConf, L, strName);
+	else if(strConfType == "RadioWithArg")
+		RadioWithArgToDB(popConf, L, strName);
+	else if(strConfType == "Check")
+		CheckToDB(popConf, L, strName);
+	else if(strConfType == "CheckWithArg")
+		CheckWithArgToDB(popConf, L, strName);
+	else
+		return -3;
+
 	return 0;
 }
 

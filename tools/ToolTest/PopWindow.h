@@ -23,11 +23,10 @@ extern bool g_bIsPopMenu;
 		if (pMsg->message == WM_RBUTTONDOWN)\
 		{\
 			CWnd* wnd = WindowFromPoint(pMsg->pt);\
-			CPopWindow popWin(IDD_POP);\
+			CPopWindow popWin(IDD_POP, wnd);\
 			CollectionMainConfsT::iterator iter = g_mapMainConfs.find(wnd->GetDlgCtrlID());\
 			if(iter != g_mapMainConfs.end())\
 			{\
-				popWin.SetMain(wnd);\
 				popWin.Show();\
 				g_bIsPopMenu = false;\
 				return TRUE;\
@@ -160,9 +159,10 @@ public:
 	void SetMain(CWnd* pWnd);
 	BOOL Show();
 	std::vector<SPopMain>& GetPopMains();
-private:
+public:
 	//创建所有配置控件
 	int CreatePopControl();
+private:
 	//创建主控件
 	int CreatePopMainControl(SPopMainConf& mainConf, DWORD nMainStyle);
 	//创建参数控件

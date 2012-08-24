@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "ToolTest.h"
 #include "ToolTestDlg.h"
+#include "ac_lua.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -55,6 +56,7 @@ CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 
 CToolTestDlg::~CToolTestDlg()
 {
+	lua_close(m_pLua);
 }
 
 void CToolTestDlg::DoDataExchange(CDataExchange* pDX)
@@ -67,6 +69,8 @@ BEGIN_MESSAGE_MAP(CToolTestDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
+	ON_BN_CLICKED(IDC_SAVETODB, &CToolTestDlg::OnBnClickedSavetodb)
+	ON_BN_CLICKED(IDC_LOADFROMDB, &CToolTestDlg::OnBnClickedLoadfromdb)
 END_MESSAGE_MAP()
 
 
@@ -102,6 +106,10 @@ BOOL CToolTestDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	LoadPopConfig("ToolTestCfg.lua");
 	InitCommandMap();
+
+	//lua相关初始化
+	m_pLua = lua_open();
+	luaL_openlibs(m_pLua);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -161,3 +169,15 @@ void CToolTestDlg::InitCommandMap()
 	REG_PROPERTY(IDC_EDIT1,"TestCheck2");
 }
 
+
+void CToolTestDlg::OnBnClickedSavetodb()
+{
+	MainToDB(GetDlgItem(IDC_EDIT1),m_pLua,"Edit1");
+	MainToDB(GetDlgItem(IDC_LIST1),m_pLua,"List1");
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+void CToolTestDlg::OnBnClickedLoadfromdb()
+{
+	// TODO: 在此添加控件通知处理程序代码
+}

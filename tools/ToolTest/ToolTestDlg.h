@@ -35,5 +35,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	void InitCommandMap();
-	CListBox m_test1;
+	afx_msg void OnBnClickedSavetodb();
+	afx_msg void OnBnClickedLoadfromdb();
+private:
+	lua_State* m_pLua;
 };
