@@ -155,6 +155,10 @@ int CPopWindow::CreatePopMainControl(SPopMainConf& mainConf, DWORD nMainStyle)
 		this,
 		m_nId++);
 
+	//设置默认值
+	if(mainConf.m_bChecked)
+		pMainCtrl->SetCheck(BST_CHECKED);
+
 	//更新控件起始坐标
 	m_nStartX += mainConf.m_nWidth;
 	m_vtWnds.push_back(pMainCtrl);
@@ -750,6 +754,307 @@ int MainToPop(CWnd* pMainWnd, CPopWindow* pPopWnd)
 
 //===================================================================================
 
+//内部存储的参数格式
+enum EParamDataType
+{
+	PARAM_DATA_TYPE_UNKNOWN,
+	PARAM_DATA_TYPE_INT,		//int型
+	PARAM_DATA_TYPE_FLOAT,		//float型
+	PARAM_DATA_TYPE_STRING,		//string型
+	PARAM_DATA_TYPE_BOOL,		//bool型
+	PARAM_DATA_TYPE_ARRAY_INT,	//int型数组
+};
+
+//内部存储的参数数据
+struct SPopParamData
+{
+	CString m_strCName;			//参数名
+	int m_nDataType;			//参数类型
+
+	//以下类似union，参数值
+	int m_nValue;
+	float m_fValue;
+	CString m_strValue;
+	bool m_bValue;
+	std::vector<int> m_vtValue;
+
+	SPopParamData()
+	{
+		m_strCName = "";
+		m_nDataType = PARAM_DATA_TYPE_UNKNOWN;
+		m_nValue = -1;
+		m_fValue = 0.0;
+		m_strValue = "";
+		m_bValue = false;
+		m_vtValue.clear();
+	}
+};
+
+//内部存储的主数据
+struct SPopMainData
+{
+	int m_nValue;							//主控件值
+	std::vector<SPopParamData> m_vtParams;	//参数值
+	SPopMainData()
+	{
+		m_nValue = -1;
+		m_vtParams.clear();
+	}
+};
+
+//获取默认参数值
+//注：这里用到atoi和atof，这两个函数不太安全，需以后修正
+int GetDefaultParamData(SPopParamConf& popParamConf, SPopParamData& popParamData)
+{
+	popParamData.m_strCName = popParamConf.m_strCName;
+	if(popParamConf.m_strCtrlType == "Edit")
+	{
+		if(popParamConf.m_strCast == "Integer")
+		{
+			popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
+			popParamData.m_nValue = atoi(popParamConf.m_strDefault.GetBuffer());
+		}
+		else if(popParamConf.m_strCast == "Float")
+		{
+			popParamData.m_nDataType = PARAM_DATA_TYPE_FLOAT;
+			popParamData.m_fValue = atof(popParamConf.m_strDefault.GetBuffer());
+		}
+		else if(popParamConf.m_strCast == "Bool")
+		{
+			popParamData.m_nDataType = PARAM_DATA_TYPE_BOOL;
+			if(popParamConf.m_strDefault.IsEmpty() || popParamConf.m_strDefault == "0")
+				popParamData.m_bValue = false;
+			else
+				popParamData.m_bValue = true;
+		}
+		else
+		{
+			popParamData.m_nDataType = PARAM_DATA_TYPE_STRING;
+			popParamData.m_strValue = popParamConf.m_strDefault;
+		}
+	}
+	else if(popParamConf.m_strCtrlType == "Combobox")
+	{
+		popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
+		for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
+		{
+			if(popParamConf.m_vtComboConf[comboIdx].m_bChecked)
+			{
+				popParamData.m_nValue = popParamConf.m_vtComboConf[comboIdx].m_nValue;
+				break;
+			}
+		}
+	}
+	else if(popParamConf.m_strCtrlType == "CheckCombo")
+	{
+		popParamData.m_nDataType = PARAM_DATA_TYPE_ARRAY_INT;
+		for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
+		{
+			if(popParamConf.m_vtComboConf[comboIdx].m_bChecked)
+				popParamData.m_vtValue.push_back(popParamConf.m_vtComboConf[comboIdx].m_nValue);
+		}
+	}
+	else
+		return -1;
+
+	return 0;
+}
+
+//获取默认主值
+int GetDefaultMainData(SPopMainConf& popMainConf, SPopMainData& popMainData)
+{
+	//主控件未选中
+	if(!popMainConf.m_bChecked)
+		return -1;
+
+	//存主控件的值
+	popMainData.m_nValue = popMainConf.m_nValue;
+
+	//依次存参数控件的值
+	for(size_t paramIdx = 0; paramIdx < popMainConf.m_vtParams.size(); paramIdx++)
+	{
+		SPopParamData popParamData;
+		if(GetDefaultParamData(popMainConf.m_vtParams[paramIdx], popParamData) == 0)
+			popMainData.m_vtParams.push_back(popParamData);
+	}
+
+	return 0;
+}
+
+//获取配置默认值
+int GetDefaultData(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData)
+{
+	std::vector<SPopMainConf>& vtPopMainConf = popConf.m_vtMains;
+	for(size_t mainIdx = 0; mainIdx < vtPopMainConf.size(); mainIdx++)
+	{
+		SPopMainData popMainData;
+		if(GetDefaultMainData(vtPopMainConf[mainIdx], popMainData) == 0)
+			vtPopMainData.push_back(popMainData);
+	}
+
+	return 0;
+}
+
+//参数文本转成内部存储格式
+int ParamTextToData(CString& strItemText, SPopParamConf& popParamConf, SPopParamData& popParamData)
+{
+	//参数名和参数值通过=隔开
+	int paramNamePos = strItemText.FindOneOf("=");
+	if(paramNamePos != -1)
+	{
+		CString strParamName = strItemText.Left(paramNamePos);
+		CString strParamValues = strItemText.Mid(paramNamePos + 1);
+
+		//参数名不匹配
+		if(strParamName != popParamConf.m_strName)
+			return -1;
+
+		popParamData.m_strCName = popParamConf.m_strCName;
+
+		std::vector<CString> vtParamValueTexts;
+		CString strItemText;
+		int nParamValuePos = 0;
+		//每个参数控件通过,隔开
+		strItemText = strParamValues.Tokenize(_T("`"),nParamValuePos);
+		while (strItemText != _T(""))
+		{
+			vtParamValueTexts.push_back(strItemText);
+			strItemText = strParamValues.Tokenize(_T("`"), nParamValuePos);
+		};
+
+		//参数无值，使用默认值
+		if(vtParamValueTexts.empty())
+		{
+			GetDefaultParamData(popParamConf, popParamData);
+			return 0;
+		}
+
+		if(popParamConf.m_strCtrlType == "Edit")
+		{
+			if(popParamConf.m_strCast == "Integer")
+			{
+				popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
+				popParamData.m_nValue = atoi(vtParamValueTexts[0].GetBuffer());
+			}
+			else if(popParamConf.m_strCast == "Float")
+			{
+				popParamData.m_nDataType = PARAM_DATA_TYPE_FLOAT;
+				popParamData.m_fValue = atof(vtParamValueTexts[0].GetBuffer());
+			}
+			else if(popParamConf.m_strCast == "Bool")
+			{
+				popParamData.m_nDataType = PARAM_DATA_TYPE_BOOL;
+				if(vtParamValueTexts[0].IsEmpty() || vtParamValueTexts[0] == "")
+					popParamData.m_bValue = false;
+				else
+					popParamData.m_bValue = true;
+			}
+			else
+			{
+				popParamData.m_nDataType = PARAM_DATA_TYPE_STRING;
+				popParamData.m_strValue = vtParamValueTexts[0];
+			}
+		}
+		else if(popParamConf.m_strCtrlType == "Combobox")
+		{
+			for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
+			{
+				if(popParamConf.m_vtComboConf[comboIdx].m_strName == vtParamValueTexts[0])
+				{
+					popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
+					popParamData.m_nValue = popParamConf.m_vtComboConf[comboIdx].m_nValue;
+					break;
+				}
+			}
+		}
+		else if(popParamConf.m_strCtrlType == "CheckCombo")
+		{
+			for(size_t paramValueIdx = 0; paramValueIdx < vtParamValueTexts.size(); paramValueIdx++)
+			{
+				for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
+				{
+					if(popParamConf.m_vtComboConf[comboIdx].m_strName == vtParamValueTexts[paramValueIdx])
+					{
+						popParamData.m_nDataType = PARAM_DATA_TYPE_ARRAY_INT;
+						popParamData.m_vtValue.push_back(popParamConf.m_vtComboConf[comboIdx].m_nValue);
+						break;
+					}
+				}
+			}
+		}
+		else
+			return -1;
+	}
+
+	return 0;
+}
+
+//主配置文本转成内部存储格式
+int MainTextToData(CString& strItemText, std::vector<SPopMainConf>& vtPopMainConf, SPopMainData& popMainData)
+{
+	CString strMainText;
+	CString strParamsText;
+
+	//主控件和参数控件通过:隔开
+	int nMainPos = strItemText.FindOneOf(":");
+	if(nMainPos != -1)
+	{
+		strMainText = strItemText.Left(nMainPos);
+		strParamsText = strItemText.Mid(nMainPos + 1);
+	}
+	else
+		strMainText = strItemText;
+
+	//查找匹配的主控件
+	for(size_t mainIdx = 0; mainIdx < vtPopMainConf.size(); mainIdx++)
+	{
+		if(vtPopMainConf[mainIdx].m_strName == strMainText)
+		{
+			std::vector<CString> vtParamTexts;
+			CString strItemText;
+			int nParamPos = 0;
+			//每个参数控件通过,隔开
+			strItemText = strParamsText.Tokenize(_T(","),nParamPos);
+			while (strItemText != _T(""))
+			{
+				vtParamTexts.push_back(strItemText);
+				strItemText = strParamsText.Tokenize(_T(","), nParamPos);
+			};
+
+			//参数控件个数不匹配
+			if(vtParamTexts.size() != vtPopMainConf[mainIdx].m_vtParams.size())
+				return -1;
+
+			//主控件选中
+			popMainData.m_nValue = vtPopMainConf[mainIdx].m_nValue;
+
+			//设置参数控件的值
+			for(size_t paramIdx = 0; paramIdx < vtPopMainConf[mainIdx].m_vtParams.size(); paramIdx++)
+			{
+				SPopParamData popParamData;
+				ParamTextToData(vtParamTexts[paramIdx], vtPopMainConf[mainIdx].m_vtParams[paramIdx], popParamData);
+				popMainData.m_vtParams.push_back(popParamData);
+			}
+
+			break;
+		}
+	}
+
+	return 0;
+}
+
+//文本转成内部存储格式
+int TextToData(SPopConf& popConf, std::vector<CString>& vtMainTexts, std::vector<SPopMainData>& vtPopMainData)
+{
+	for(size_t mainIdx = 0; mainIdx < vtMainTexts.size(); mainIdx++)
+	{
+		SPopMainData popMainData;
+		if(MainTextToData(vtMainTexts[mainIdx], popConf.m_vtMains, popMainData) == 0)
+			vtPopMainData.push_back(popMainData);
+	}
+	return 0;
+}
+
 int RadioToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
 {
 	return 0;
@@ -786,7 +1091,11 @@ int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 	if(MainToMainTexts(pMainWnd, vtMainTexts) != 0)
 		return -3;
 
-
+	std::vector<SPopMainData> vtPopMainData;
+	if(vtMainTexts.empty())
+		GetDefaultData(popConf, vtPopMainData);
+	else
+		TextToData(popConf, vtMainTexts, vtPopMainData);
 
 	CString strConfType = popConf.m_strConfType;
 	if(strConfType == "Radio")
@@ -798,7 +1107,7 @@ int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 	else if(strConfType == "CheckWithArg")
 		CheckWithArgToDB(popConf, L, strName);
 	else
-		return -3;
+		return -4;
 
 	return 0;
 }
