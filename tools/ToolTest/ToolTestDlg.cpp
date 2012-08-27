@@ -172,8 +172,10 @@ void CToolTestDlg::InitCommandMap()
 
 void CToolTestDlg::OnBnClickedSavetodb()
 {
+	lua_newtable(m_pLua);
 	MainToDB(GetDlgItem(IDC_EDIT1),m_pLua,"Edit1");
 	MainToDB(GetDlgItem(IDC_LIST1),m_pLua,"List1");
+	acutils::LuaUtils::SaveTableToFile(m_pLua, "datas", "data.lua");
 	// TODO: 在此添加控件通知处理程序代码
 }
 

@@ -923,7 +923,8 @@ int ParamTextToData(CString& strItemText, SPopParamConf& popParamConf, SPopParam
 		};
 
 		//参数无值，使用默认值
-		if(vtParamValueTexts.empty())
+		//Edit和Combobox必须有默认值，而CheckCombo的默认值始终为空
+		if(vtParamValueTexts.empty() && (popParamConf.m_strCtrlType == "Edit" || popParamConf.m_strCtrlType == "Combobox"))
 		{
 			GetDefaultParamData(popParamConf, popParamData);
 			return 0;
@@ -957,11 +958,11 @@ int ParamTextToData(CString& strItemText, SPopParamConf& popParamConf, SPopParam
 		}
 		else if(popParamConf.m_strCtrlType == "Combobox")
 		{
+			popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
 			for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
 			{
 				if(popParamConf.m_vtComboConf[comboIdx].m_strName == vtParamValueTexts[0])
 				{
-					popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
 					popParamData.m_nValue = popParamConf.m_vtComboConf[comboIdx].m_nValue;
 					break;
 				}
@@ -969,13 +970,13 @@ int ParamTextToData(CString& strItemText, SPopParamConf& popParamConf, SPopParam
 		}
 		else if(popParamConf.m_strCtrlType == "CheckCombo")
 		{
+			popParamData.m_nDataType = PARAM_DATA_TYPE_ARRAY_INT;
 			for(size_t paramValueIdx = 0; paramValueIdx < vtParamValueTexts.size(); paramValueIdx++)
 			{
 				for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
 				{
 					if(popParamConf.m_vtComboConf[comboIdx].m_strName == vtParamValueTexts[paramValueIdx])
 					{
-						popParamData.m_nDataType = PARAM_DATA_TYPE_ARRAY_INT;
 						popParamData.m_vtValue.push_back(popParamConf.m_vtComboConf[comboIdx].m_nValue);
 						break;
 					}
@@ -1055,23 +1056,132 @@ int TextToData(SPopConf& popConf, std::vector<CString>& vtMainTexts, std::vector
 	return 0;
 }
 
-int RadioToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+int RadioToDB(std::vector<SPopMainData> vtPopMainData, lua_State* L, const std::string& strName)
 {
+	ASSERT(lua_istable(L, -1));
+	if(vtPopMainData.empty())
+		lua_pushinteger(L, -1);
+	else
+		lua_pushinteger(L, vtPopMainData[0].m_nValue);
+
+	lua_setfield(L, -2, strName.c_str());
 	return 0;
 }
 
-int RadioWithArgToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+int RadioWithArgToDB(std::vector<SPopMainData> vtPopMainData, lua_State* L, const std::string& strName)
 {
+	ASSERT(lua_istable(L, -1));
+	lua_newtable(L);
+	if(!vtPopMainData.empty())
+	{
+		//存储主值
+		lua_pushinteger(L, 1);
+		lua_pushinteger(L, vtPopMainData[0].m_nValue);
+		lua_settable(L, -3);
+
+		//依次存储所有参数值
+		for(size_t paramIdx = 0; paramIdx < vtPopMainData[0].m_vtParams.size(); paramIdx++)
+		{
+			switch(vtPopMainData[0].m_vtParams[paramIdx].m_nDataType)
+			{
+			case PARAM_DATA_TYPE_INT:
+				lua_pushinteger(L, vtPopMainData[0].m_vtParams[paramIdx].m_nValue);
+				break;
+			case PARAM_DATA_TYPE_FLOAT:
+				lua_pushnumber(L, vtPopMainData[0].m_vtParams[paramIdx].m_fValue);
+				break;
+			case PARAM_DATA_TYPE_BOOL:
+				lua_pushboolean(L, vtPopMainData[0].m_vtParams[paramIdx].m_bValue);
+				break;
+			case PARAM_DATA_TYPE_STRING:
+				lua_pushstring(L, vtPopMainData[0].m_vtParams[paramIdx].m_strValue.GetBuffer());
+				break;
+			case PARAM_DATA_TYPE_ARRAY_INT:
+				{
+					std::vector<int>& vtValues = vtPopMainData[0].m_vtParams[paramIdx].m_vtValue;
+					lua_newtable(L);
+					for(size_t valueIdx = 0; valueIdx < vtValues.size(); valueIdx++)
+					{
+						lua_pushinteger(L, valueIdx);
+						lua_pushinteger(L, vtValues[valueIdx]);
+						lua_settable(L, -3);
+					}
+				}
+				break;
+			default:
+				ASSERT(false && "Unknown type");
+			}
+			lua_setfield(L, -2, vtPopMainData[0].m_vtParams[paramIdx].m_strCName.GetBuffer());
+		}
+	}
+
+	lua_setfield(L, -2, strName.c_str());
 	return 0;
 }
 
-int CheckToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+int CheckToDB(std::vector<SPopMainData> vtPopMainData, lua_State* L, const std::string& strName)
 {
+	ASSERT(lua_istable(L, -1));
+	lua_newtable(L);
+	for(size_t mainIdx = 0; mainIdx < vtPopMainData.size(); mainIdx++)
+	{
+		lua_pushinteger(L, mainIdx);
+		lua_pushinteger(L, vtPopMainData[mainIdx].m_nValue);
+		lua_settable(L, -3);
+	}
+
+	lua_setfield(L, -2, strName.c_str());
 	return 0;
 }
 
-int CheckWithArgToDB(SPopConf& popConf, lua_State* L, const std::string& strName)
+int CheckWithArgToDB(std::vector<SPopMainData> vtPopMainData, lua_State* L, const std::string& strName)
 {
+	ASSERT(lua_istable(L, -1));
+	lua_newtable(L);
+
+	for(size_t mainIdx = 0; mainIdx < vtPopMainData.size(); mainIdx++)
+	{
+		lua_pushinteger(L, vtPopMainData[mainIdx].m_nValue);
+		lua_newtable(L);
+		//依次存储所有参数值
+		std::vector<SPopParamData>& vtPopParamData = vtPopMainData[mainIdx].m_vtParams;
+		for(size_t paramIdx = 0; paramIdx < vtPopParamData.size(); paramIdx++)
+		{
+			switch(vtPopParamData[paramIdx].m_nDataType)
+			{
+			case PARAM_DATA_TYPE_INT:
+				lua_pushinteger(L, vtPopParamData[paramIdx].m_nValue);
+				break;
+			case PARAM_DATA_TYPE_FLOAT:
+				lua_pushnumber(L, vtPopParamData[paramIdx].m_fValue);
+				break;
+			case PARAM_DATA_TYPE_BOOL:
+				lua_pushboolean(L, vtPopParamData[paramIdx].m_bValue);
+				break;
+			case PARAM_DATA_TYPE_STRING:
+				lua_pushstring(L, vtPopParamData[paramIdx].m_strValue.GetBuffer());
+				break;
+			case PARAM_DATA_TYPE_ARRAY_INT:
+				{
+					std::vector<int>& vtValues = vtPopParamData[paramIdx].m_vtValue;
+					lua_newtable(L);
+					for(size_t valueIdx = 0; valueIdx < vtValues.size(); valueIdx++)
+					{
+						lua_pushinteger(L, valueIdx);
+						lua_pushinteger(L, vtValues[valueIdx]);
+						lua_settable(L, -3);
+					}
+				}
+				break;
+			default:
+				ASSERT(false && "Unknown type");
+			}
+			lua_setfield(L, -2, vtPopParamData[paramIdx].m_strCName.GetBuffer());
+		}
+		lua_settable(L, -3);
+	}
+
+	lua_setfield(L, -2, strName.c_str());
 	return 0;
 }
 
@@ -1092,20 +1202,21 @@ int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 		return -3;
 
 	std::vector<SPopMainData> vtPopMainData;
-	if(vtMainTexts.empty())
+	//Radio必须有默认值，而chech的默认值始终为空
+	if(vtMainTexts.empty() && (popConf.m_strConfType == "Radio" || popConf.m_strConfType == "RadioWithArg"))
 		GetDefaultData(popConf, vtPopMainData);
 	else
 		TextToData(popConf, vtMainTexts, vtPopMainData);
 
 	CString strConfType = popConf.m_strConfType;
 	if(strConfType == "Radio")
-		RadioToDB(popConf, L, strName);
+		RadioToDB(vtPopMainData, L, strName);
 	else if(strConfType == "RadioWithArg")
-		RadioWithArgToDB(popConf, L, strName);
+		RadioWithArgToDB(vtPopMainData, L, strName);
 	else if(strConfType == "Check")
-		CheckToDB(popConf, L, strName);
+		CheckToDB(vtPopMainData, L, strName);
 	else if(strConfType == "CheckWithArg")
-		CheckWithArgToDB(popConf, L, strName);
+		CheckWithArgToDB(vtPopMainData, L, strName);
 	else
 		return -4;
 
