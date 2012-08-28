@@ -176,10 +176,16 @@ void CToolTestDlg::OnBnClickedSavetodb()
 	MainToDB(GetDlgItem(IDC_EDIT1),m_pLua,"Edit1");
 	MainToDB(GetDlgItem(IDC_LIST1),m_pLua,"List1");
 	acutils::LuaUtils::SaveTableToFile(m_pLua, "datas", "data.lua");
+	lua_pop(m_pLua, 1);
 	// TODO: 在此添加控件通知处理程序代码
 }
 
 void CToolTestDlg::OnBnClickedLoadfromdb()
 {
+	luaL_dofile(m_pLua, "data.lua");
+	lua_getglobal(m_pLua, "datas");
+	DBToMain(m_pLua, "Edit1", GetDlgItem(IDC_EDIT1));
+	DBToMain(m_pLua, "List1", GetDlgItem(IDC_LIST1));
+	lua_pop(m_pLua, 1);
 	// TODO: 在此添加控件通知处理程序代码
 }

@@ -1225,8 +1225,264 @@ int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 
 //===================================================================================
 
+int DBToRadio(lua_State* L, const std::string& strName, std::vector<SPopMainData>& vtPopMainData)
+{
+	ASSERT(lua_istable(L, -1));
+
+	//获取主值
+	lua_getfield(L, -1, strName.c_str());
+	if(lua_type(L, -1) != LUA_TNUMBER)
+	{
+		lua_pop(L, 1);
+		return -1;
+	}
+	int nMainValue = lua_tointeger(L, -1);
+	lua_pop(L, 1);
+
+	SPopMainData popMainData;
+	popMainData.m_nValue = nMainValue;
+	vtPopMainData.push_back(popMainData);
+	return 0;
+}
+
+int DBToRadioWithArg(lua_State* L, const std::string& strName, std::vector<SPopMainData>& vtPopMainData)
+{
+	ASSERT(lua_istable(L, -1));
+
+	int nTopIndex = lua_gettop(L);
+
+	lua_getfield(L, -1, strName.c_str());
+	//该项配置不存在或无法解析
+	if(lua_type(L, -1) != LUA_TTABLE)
+	{
+		lua_settop(L, nTopIndex);
+		return -1;
+	}
+
+	SPopMainData popMainData;
+
+	lua_pushnil(L);
+	while(lua_next(L, -2) != 0)
+	{
+		switch(lua_type(L, -2))
+		{
+		case LUA_TNUMBER:	//主值
+			{
+				int nMainIndex = lua_tointeger(L, -2);
+				//主值索引为1，不为1则非法
+				if(nMainIndex != 1)
+				{
+					lua_settop(L, nTopIndex);
+					return -2;
+				}
+				//主值为number，否则非法
+				if(lua_type(L, -1) != LUA_TNUMBER)
+				{
+					lua_settop(L, nTopIndex);
+					return -3;
+				}
+				popMainData.m_nValue = lua_tointeger(L, -1);
+			}
+			break;
+		case LUA_TSTRING:	//参数
+			{
+				SPopParamData popParamData;
+				popParamData.m_strCName = lua_tostring(L, -2);
+				switch(lua_type(L, -1))
+				{
+				case LUA_TNUMBER:
+					popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
+					popParamData.m_nValue = lua_tointeger(L, -1);
+					popParamData.m_fValue = lua_tonumber(L, -1);
+					break;
+				case LUA_TSTRING:
+					popParamData.m_nDataType = PARAM_DATA_TYPE_STRING;
+					popParamData.m_strValue = lua_tostring(L, -1);
+					break;
+				case LUA_TBOOLEAN:
+					popParamData.m_nDataType = PARAM_DATA_TYPE_BOOL;
+					popParamData.m_bValue = lua_toboolean(L, -1);
+					break;
+				case LUA_TTABLE:
+					popParamData.m_nDataType = PARAM_DATA_TYPE_ARRAY_INT;
+					lua_pushnil(L);
+					while(lua_next(L, -2) != 0)
+					{
+						if(lua_type(L, -1) != LUA_TNUMBER || lua_type(L, -2) != LUA_TNUMBER)
+						{
+							lua_settop(L, nTopIndex);
+							return -4;
+						}
+						popParamData.m_vtValue.push_back(lua_tointeger(L, -1));
+						lua_pop(L, 1);
+					}
+					break;
+				default:
+					lua_settop(L, nTopIndex);
+					return -5;
+				}
+				popMainData.m_vtParams.push_back(popParamData);
+			}
+			break;
+		default:
+			lua_settop(L, nTopIndex);
+			return -6;
+		}
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+	vtPopMainData.push_back(popMainData);
+	return 0;
+}
+
+int DBToCheck(lua_State* L, const std::string& strName, std::vector<SPopMainData>& vtPopMainData)
+{
+	ASSERT(lua_istable(L, -1));
+	int nTopIndex = lua_gettop(L);
+	lua_getfield(L, -1, strName.c_str());
+	//该项配置不存在或无法解析
+	if(lua_type(L, -1) != LUA_TTABLE)
+	{
+		lua_pop(L, 1);
+		return -1;
+	}
+
+	lua_pushnil(L);
+	while(lua_next(L, -2) != 0)
+	{
+		//主值的索引和主值必须都为int
+		if(lua_type(L, -2) != LUA_TNUMBER || lua_type(L, -1) != LUA_TNUMBER)
+		{
+			lua_settop(L, nTopIndex);
+			return -2;
+		}
+		
+		SPopMainData popMainData;
+		popMainData.m_nValue = lua_tointeger(L, -1);
+		vtPopMainData.push_back(popMainData);
+		lua_pop(L, 1);
+	}
+
+	lua_pop(L, 1);
+	return 0;
+}
+
+int DBToCheckWithArg(lua_State* L, const std::string& strName, std::vector<SPopMainData>& vtPopMainData)
+{
+	ASSERT(lua_istable(L, -1));
+	int nTopIndex = lua_gettop(L);
+	lua_getfield(L, -1, strName.c_str());
+	//该项配置不存在或无法解析
+	if(lua_type(L, -1) != LUA_TTABLE)
+	{
+		lua_pop(L, 1);
+		return -1;
+	}
+
+	lua_pushnil(L);
+	while(lua_next(L, -2) != 0)
+	{
+		//主值必须为int，所有参数在一个table中
+		if(lua_type(L, -2) != LUA_TNUMBER || lua_type(L, -1) != LUA_TTABLE)
+		{
+			lua_settop(L, nTopIndex);
+			return -2;
+		}
+
+		SPopMainData popMainData;
+		popMainData.m_nValue = lua_tointeger(L, -2);
+
+		lua_pushnil(L);
+		while(lua_next(L, -2) != 0)
+		{
+			SPopParamData popParamData;
+			if(lua_type(L, -2) != LUA_TSTRING)
+			{
+				lua_settop(L, nTopIndex);
+				return -3;
+			}
+			popParamData.m_strCName = lua_tostring(L, -2);
+
+			switch(lua_type(L, -1))
+			{
+			case LUA_TNUMBER:
+				popParamData.m_nDataType = PARAM_DATA_TYPE_INT;
+				popParamData.m_nValue = lua_tointeger(L, -1);
+				popParamData.m_fValue = lua_tonumber(L, -1);
+				break;
+			case LUA_TSTRING:
+				popParamData.m_nDataType = PARAM_DATA_TYPE_STRING;
+				popParamData.m_strValue = lua_tostring(L, -1);
+				break;
+			case LUA_TBOOLEAN:
+				popParamData.m_nDataType = PARAM_DATA_TYPE_BOOL;
+				popParamData.m_bValue = lua_toboolean(L, -1);
+				break;
+			case LUA_TTABLE:
+				popParamData.m_nDataType = PARAM_DATA_TYPE_ARRAY_INT;
+				{
+					lua_pushnil(L);
+					while(lua_next(L, -2) != 0)
+					{
+						if(lua_type(L, -1) != LUA_TNUMBER || lua_type(L, -2) != LUA_TNUMBER)
+						{
+							lua_settop(L, nTopIndex);
+							return -4;
+						}
+						popParamData.m_vtValue.push_back(lua_tointeger(L, -1));
+						lua_pop(L, 1);
+					}
+				}
+				break;
+			}
+			popMainData.m_vtParams.push_back(popParamData);
+			lua_pop(L, 1);
+		}
+
+		vtPopMainData.push_back(popMainData);
+		lua_pop(L, 1);
+	}
+
+	lua_pop(L, 1);
+	return 0;
+}
+
 int DBToMain(lua_State* L, const std::string& strName, CWnd* pMainWnd)
 {
+	ASSERT(pMainWnd && L);
+	if(g_mapMainConfs.find(pMainWnd->GetDlgCtrlID()) == g_mapMainConfs.end())
+		return -1;
+
+	CString strXmlName = g_mapMainConfs[pMainWnd->GetDlgCtrlID()];
+	if(g_mapPopConfs.find(strXmlName) == g_mapPopConfs.end())
+		return -2;
+
+	SPopConf& popConf = g_mapPopConfs[strXmlName];
+
+	std::vector<SPopMainData> vtPopMainData;
+	CString strConfType = popConf.m_strConfType;
+	if(strConfType == "Radio")
+		DBToRadio(L, strName, vtPopMainData);
+	else if(strConfType == "RadioWithArg")
+		DBToRadioWithArg(L, strName, vtPopMainData);
+	else if(strConfType == "Check")
+		DBToCheck(L, strName, vtPopMainData);
+	else if(strConfType == "CheckWithArg")
+		DBToCheckWithArg(L, strName, vtPopMainData);
+	else
+		return -4;
+
+
+	std::vector<CString> vtMainTexts;
+	if(MainToMainTexts(pMainWnd, vtMainTexts) != 0)
+		return -3;
+
+	//Radio必须有默认值，而chech的默认值始终为空
+	if(vtMainTexts.empty() && (popConf.m_strConfType == "Radio" || popConf.m_strConfType == "RadioWithArg"))
+		GetDefaultData(popConf, vtPopMainData);
+	else
+		TextToData(popConf, vtMainTexts, vtPopMainData);
+
 	return 0;
 }
 
