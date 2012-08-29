@@ -1261,28 +1261,24 @@ int DBToRadioWithArg(lua_State* L, const std::string& strName, std::vector<SPopM
 
 	SPopMainData popMainData;
 
+	//取主值
+	lua_pushinteger(L, 1);
+	lua_gettable(L, -2);
+	if(lua_type(L, -1) != LUA_TNUMBER)
+	{
+		lua_settop(L, nTopIndex);
+		return -2;
+	}
+	popMainData.m_nValue = lua_tointeger(L, -1);
+	lua_pop(L, 1);
+
+	//依次取参数
 	lua_pushnil(L);
 	while(lua_next(L, -2) != 0)
 	{
 		switch(lua_type(L, -2))
 		{
 		case LUA_TNUMBER:	//主值
-			{
-				int nMainIndex = lua_tointeger(L, -2);
-				//主值索引为1，不为1则非法
-				if(nMainIndex != 1)
-				{
-					lua_settop(L, nTopIndex);
-					return -2;
-				}
-				//主值为number，否则非法
-				if(lua_type(L, -1) != LUA_TNUMBER)
-				{
-					lua_settop(L, nTopIndex);
-					return -3;
-				}
-				popMainData.m_nValue = lua_tointeger(L, -1);
-			}
 			break;
 		case LUA_TSTRING:	//参数
 			{
