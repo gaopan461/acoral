@@ -1471,8 +1471,56 @@ int DBToCheckWithArg(lua_State* L, const std::string& strName, std::vector<SPopM
 	return 0;
 }
 
+//内部存储格式转成参数配置文本
+int DataToParamText(SPopParamData& popParamData, std::vector<SPopParamConf>& vtPopParamConf, CString& strParamText)
+{
+	return 0;
+}
+
+//内部存储格式转成主配置文本
+int DataToMainText(SPopMainData& popMainData, std::vector<SPopMainConf>& vtPopMainConf, CString& strMainText)
+{
+	//查找匹配的主控件
+	for(size_t mainIdx = 0; mainIdx < vtPopMainConf.size(); mainIdx++)
+	{
+		if(vtPopMainConf[mainIdx].m_nValue == popMainData.m_nValue)
+		{
+			strMainText = vtPopMainConf[mainIdx].m_strName;
+			if(vtPopMainConf[mainIdx].m_vtParams.size() != popMainData.m_vtParams.size())
+				return -1;
+
+			if(!popMainData.m_vtParams.empty())
+				strMainText += ":";
+
+			//设置参数控件的值
+			for(size_t paramIdx = 0; paramIdx < vtPopMainConf[mainIdx].m_vtParams.size(); paramIdx++)
+			{
+				CString strParamText;
+				//参数值无法解析
+				if(DataToParamText(popMainData.m_vtParams[paramIdx], vtPopMainConf[mainIdx].m_vtParams, strParamText) != 0)
+					return -2;
+
+				if(paramIdx)
+					strMainText += ",";
+
+				strMainText += strParamText;
+			}
+			break;
+		}
+	}
+
+	return 0;
+}
+
+//内部格式转成可阅读的数据
 int DataToText(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData, std::vector<CString>& vtMainTexts)
 {
+	for(size_t mainIdx = 0; mainIdx < vtPopMainData.size(); mainIdx++)
+	{
+		CString strMainText;
+		if(DataToMainText(vtPopMainData[mainIdx], popConf.m_vtMains, strMainText) == 0)
+			vtMainTexts.push_back(strMainText);
+	}
 	return 0;
 }
 
