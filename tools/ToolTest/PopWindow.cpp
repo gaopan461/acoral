@@ -5,6 +5,7 @@
 #include "ToolTest.h"
 #include "PopWindow.h"
 #include "CheckComboBox.h"
+#include <stdio.h>
 
 //===================================================================================
 bool g_bIsPopMenu = true;
@@ -1472,32 +1473,129 @@ int DBToCheckWithArg(lua_State* L, const std::string& strName, std::vector<SPopM
 }
 
 //内部存储格式转成参数配置文本
-int DataToParamText(SPopParamData& popParamData, std::vector<SPopParamConf>& vtPopParamConf, CString& strParamText)
+int DataToParamText(SPopParamConf& popParamConf, std::vector<SPopParamData>& vtPopParamData, CString& strParamText)
 {
-	return 0;
+	size_t paramIdx;
+	for(paramIdx = 0; paramIdx < vtPopParamData.size(); paramIdx++)
+	{
+		if(vtPopParamData[paramIdx].m_strCName == popParamConf.m_strCName)
+		{
+			strParamText = popParamConf.m_strName + "=";
+			CString strCtrlType = popParamConf.m_strCtrlType;
+			if(strCtrlType == "Edit")
+			{
+				CString strValue;
+				if(popParamConf.m_strCast == "Integer")
+				{
+					if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_INT)
+						return -1;
+
+					char buf[20];
+					memset(buf,' ',20);
+					sprintf_s(buf,20,"%d",vtPopParamData[paramIdx].m_nValue);
+					strValue = buf;
+					strValue.Trim();
+				}
+				else if(popParamConf.m_strCast == "Float")
+				{
+					if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_INT && 
+						vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_FLOAT)
+						return -1;
+
+					char buf[20];
+					memset(buf,' ',20);
+					sprintf_s(buf,20,"%10.3f",vtPopParamData[paramIdx].m_fValue);
+					strValue = buf;
+					strValue.Trim();
+				}
+				else if(popParamConf.m_strCast == "Bool")
+				{
+					if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_BOOL)
+						return -1;
+
+					strValue = vtPopParamData[paramIdx].m_bValue ? "1" : "0";
+				}
+				else
+				{
+					if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_STRING)
+						return -1;
+
+					strValue = vtPopParamData[paramIdx].m_strValue;
+				}
+
+				strParamText += strValue;
+			}
+			else if(strCtrlType == "Combobox")
+			{
+				if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_INT)
+					return -1;
+
+				std::vector<SComboItemConf>& vtComboItemConf = popParamConf.m_vtComboConf;
+				for(size_t comboIdx = 0; comboIdx < vtComboItemConf.size(); comboIdx++)
+				{
+					if(vtComboItemConf[comboIdx].m_nValue == vtPopParamData[paramIdx].m_nValue)
+					{
+						strParamText += vtComboItemConf[comboIdx].m_strName;
+						break;
+					}
+				}
+			}
+			else if(strCtrlType == "ChechCombo")
+			{
+				if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_ARRAY_INT)
+					return -1;
+
+				std::vector<SComboItemConf>& vtComboItemConf = popParamConf.m_vtComboConf;
+				bool isFirst = true;
+				for(size_t comboIdx = 0; comboIdx < vtComboItemConf.size(); comboIdx++)
+				{
+					if(vtComboItemConf[comboIdx].m_nValue == vtPopParamData[paramIdx].m_nValue)
+					{
+						if(!isFirst)
+							strParamText += "`";
+						else
+							isFirst = false;
+
+						strParamText += vtComboItemConf[comboIdx].m_strName;
+					}
+				}
+			}
+			else
+				return -2;
+
+			break;
+		}
+	}
+
+	//未找到匹配项
+	if(paramIdx >= vtPopParamData.size())
+		return -1;
+	else
+		return 0;
 }
 
 //内部存储格式转成主配置文本
-int DataToMainText(SPopMainData& popMainData, std::vector<SPopMainConf>& vtPopMainConf, CString& strMainText)
+int DataToMainText(SPopMainConf& popMainConf, std::vector<SPopMainData>& vtPopMainData, CString& strMainText)
 {
 	//查找匹配的主控件
-	for(size_t mainIdx = 0; mainIdx < vtPopMainConf.size(); mainIdx++)
+	size_t mainIdx;
+	for(mainIdx = 0; mainIdx < vtPopMainData.size(); mainIdx++)
 	{
-		if(vtPopMainConf[mainIdx].m_nValue == popMainData.m_nValue)
+		if(vtPopMainData[mainIdx].m_nValue == popMainConf.m_nValue)
 		{
-			strMainText = vtPopMainConf[mainIdx].m_strName;
-			if(vtPopMainConf[mainIdx].m_vtParams.size() != popMainData.m_vtParams.size())
+			strMainText = popMainConf.m_strName;
+			if(vtPopMainData[mainIdx].m_vtParams.size() != popMainConf.m_vtParams.size())
 				return -1;
 
-			if(!popMainData.m_vtParams.empty())
+			if(!popMainConf.m_vtParams.empty())
 				strMainText += ":";
 
 			//设置参数控件的值
-			for(size_t paramIdx = 0; paramIdx < vtPopMainConf[mainIdx].m_vtParams.size(); paramIdx++)
+			for(size_t paramIdx = 0; paramIdx < popMainConf.m_vtParams.size(); paramIdx++)
 			{
 				CString strParamText;
 				//参数值无法解析
-				if(DataToParamText(popMainData.m_vtParams[paramIdx], vtPopMainConf[mainIdx].m_vtParams, strParamText) != 0)
+				if(DataToParamText(popMainConf.m_vtParams[paramIdx], vtPopMainData[mainIdx].m_vtParams, strParamText) != 0)
 					return -2;
 
 				if(paramIdx)
@@ -1509,16 +1607,21 @@ int DataToMainText(SPopMainData& popMainData, std::vector<SPopMainConf>& vtPopMa
 		}
 	}
 
-	return 0;
+	//未找到匹配项
+	if(mainIdx >= vtPopMainData.size())
+		return -1;
+	else
+		return 0;
 }
 
 //内部格式转成可阅读的数据
 int DataToText(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData, std::vector<CString>& vtMainTexts)
 {
-	for(size_t mainIdx = 0; mainIdx < vtPopMainData.size(); mainIdx++)
+	std::vector<SPopMainConf>& vtPopMainConf = popConf.m_vtMains;
+	for(size_t mainIdx = 0; mainIdx < vtPopMainConf.size(); mainIdx++)
 	{
 		CString strMainText;
-		if(DataToMainText(vtPopMainData[mainIdx], popConf.m_vtMains, strMainText) == 0)
+		if(DataToMainText(vtPopMainConf[mainIdx], vtPopMainData, strMainText) == 0)
 			vtMainTexts.push_back(strMainText);
 	}
 	return 0;
