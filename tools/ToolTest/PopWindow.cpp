@@ -804,9 +804,10 @@ struct SPopMainData
 
 //获取默认参数值
 //注：这里用到atoi和atof，这两个函数不太安全，需以后修正
-int GetDefaultParamData(SPopParamConf& popParamConf, SPopParamData& popParamData)
+int GetDefaultParamDataAndText(SPopParamConf& popParamConf, SPopParamData& popParamData, CString& strParamText)
 {
 	popParamData.m_strCName = popParamConf.m_strCName;
+	strParamText = popParamConf.m_strName + "=";
 	if(popParamConf.m_strCtrlType == "Edit")
 	{
 		if(popParamConf.m_strCast == "Integer")
@@ -832,6 +833,7 @@ int GetDefaultParamData(SPopParamConf& popParamConf, SPopParamData& popParamData
 			popParamData.m_nDataType = PARAM_DATA_TYPE_STRING;
 			popParamData.m_strValue = popParamConf.m_strDefault;
 		}
+		strParamText += popParamConf.m_strDefault;
 	}
 	else if(popParamConf.m_strCtrlType == "Combobox")
 	{
@@ -841,6 +843,7 @@ int GetDefaultParamData(SPopParamConf& popParamConf, SPopParamData& popParamData
 			if(popParamConf.m_vtComboConf[comboIdx].m_bChecked)
 			{
 				popParamData.m_nValue = popParamConf.m_vtComboConf[comboIdx].m_nValue;
+				strParamText += popParamConf.m_vtComboConf[comboIdx].m_strName;
 				break;
 			}
 		}
@@ -851,7 +854,13 @@ int GetDefaultParamData(SPopParamConf& popParamConf, SPopParamData& popParamData
 		for(size_t comboIdx = 0; comboIdx < popParamConf.m_vtComboConf.size(); comboIdx++)
 		{
 			if(popParamConf.m_vtComboConf[comboIdx].m_bChecked)
+			{
 				popParamData.m_vtValue.push_back(popParamConf.m_vtComboConf[comboIdx].m_nValue);
+				if(comboIdx)
+					strParamText += "`";
+
+				strParamText += popParamConf.m_vtComboConf[comboIdx].m_strName;
+			}
 		}
 	}
 	else
@@ -861,7 +870,7 @@ int GetDefaultParamData(SPopParamConf& popParamConf, SPopParamData& popParamData
 }
 
 //获取默认主值
-int GetDefaultMainData(SPopMainConf& popMainConf, SPopMainData& popMainData)
+int GetDefaultMainDataAndText(SPopMainConf& popMainConf, SPopMainData& popMainData, CString& strMainText)
 {
 	//主控件未选中
 	if(!popMainConf.m_bChecked)
@@ -869,27 +878,44 @@ int GetDefaultMainData(SPopMainConf& popMainConf, SPopMainData& popMainData)
 
 	//存主控件的值
 	popMainData.m_nValue = popMainConf.m_nValue;
+	strMainText = popMainConf.m_strName;
+
+	if(!popMainConf.m_vtParams.empty())
+		strMainText += ":";
 
 	//依次存参数控件的值
 	for(size_t paramIdx = 0; paramIdx < popMainConf.m_vtParams.size(); paramIdx++)
 	{
 		SPopParamData popParamData;
-		if(GetDefaultParamData(popMainConf.m_vtParams[paramIdx], popParamData) == 0)
+		CString strParamText = "";
+		if(GetDefaultParamDataAndText(popMainConf.m_vtParams[paramIdx], popParamData, strParamText) == 0)
+		{
 			popMainData.m_vtParams.push_back(popParamData);
+			if(paramIdx)
+				strMainText += ",";
+
+			strMainText += strParamText;
+		}
+		else
+			return -2;
 	}
 
 	return 0;
 }
 
 //获取配置默认值
-int GetDefaultData(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData)
+int GetDefaultDataAndText(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData, std::vector<CString>& vtMainText)
 {
 	std::vector<SPopMainConf>& vtPopMainConf = popConf.m_vtMains;
 	for(size_t mainIdx = 0; mainIdx < vtPopMainConf.size(); mainIdx++)
 	{
 		SPopMainData popMainData;
-		if(GetDefaultMainData(vtPopMainConf[mainIdx], popMainData) == 0)
+		CString strMainText = "";
+		if(GetDefaultMainDataAndText(vtPopMainConf[mainIdx], popMainData, strMainText) == 0)
+		{
 			vtPopMainData.push_back(popMainData);
+			vtMainText.push_back(strMainText);
+		}
 	}
 
 	return 0;
@@ -926,7 +952,8 @@ int ParamTextToData(CString& strItemText, SPopParamConf& popParamConf, SPopParam
 		//Edit和Combobox必须有默认值，而CheckCombo的默认值始终为空
 		if(vtParamValueTexts.empty() && (popParamConf.m_strCtrlType == "Edit" || popParamConf.m_strCtrlType == "Combobox"))
 		{
-			GetDefaultParamData(popParamConf, popParamData);
+			CString strUnused;
+			GetDefaultParamDataAndText(popParamConf, popParamData, strUnused);
 			return 0;
 		}
 
@@ -1202,9 +1229,10 @@ int MainToDB(CWnd* pMainWnd, lua_State* L, const std::string& strName)
 		return -3;
 
 	std::vector<SPopMainData> vtPopMainData;
+	std::vector<CString> vtUnused;
 	//Radio必须有默认值，而chech的默认值始终为空
 	if(vtMainTexts.empty() && (popConf.m_strConfType == "Radio" || popConf.m_strConfType == "RadioWithArg"))
-		GetDefaultData(popConf, vtPopMainData);
+		GetDefaultDataAndText(popConf, vtPopMainData, vtUnused);
 	else
 		TextToData(popConf, vtMainTexts, vtPopMainData);
 
@@ -1443,6 +1471,16 @@ int DBToCheckWithArg(lua_State* L, const std::string& strName, std::vector<SPopM
 	return 0;
 }
 
+int DataToText(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData, std::vector<CString>& vtMainTexts)
+{
+	return 0;
+}
+
+int MainTextsToMain(std::vector<CString>& vtMainTexts, CWnd* pMainWnd)
+{
+	return 0;
+}
+
 int DBToMain(lua_State* L, const std::string& strName, CWnd* pMainWnd)
 {
 	ASSERT(pMainWnd && L);
@@ -1455,6 +1493,7 @@ int DBToMain(lua_State* L, const std::string& strName, CWnd* pMainWnd)
 
 	SPopConf& popConf = g_mapPopConfs[strXmlName];
 
+	//载入DB中的数据
 	std::vector<SPopMainData> vtPopMainData;
 	CString strConfType = popConf.m_strConfType;
 	if(strConfType == "Radio")
@@ -1466,18 +1505,18 @@ int DBToMain(lua_State* L, const std::string& strName, CWnd* pMainWnd)
 	else if(strConfType == "CheckWithArg")
 		DBToCheckWithArg(L, strName, vtPopMainData);
 	else
-		return -4;
-
-
-	std::vector<CString> vtMainTexts;
-	if(MainToMainTexts(pMainWnd, vtMainTexts) != 0)
 		return -3;
 
+	std::vector<SPopMainData> vtUnused;
+	std::vector<CString> vtMainTexts;
 	//Radio必须有默认值，而chech的默认值始终为空
-	if(vtMainTexts.empty() && (popConf.m_strConfType == "Radio" || popConf.m_strConfType == "RadioWithArg"))
-		GetDefaultData(popConf, vtPopMainData);
+	if(vtPopMainData.empty() && (popConf.m_strConfType == "Radio" || popConf.m_strConfType == "RadioWithArg"))
+		GetDefaultDataAndText(popConf, vtUnused, vtMainTexts);
 	else
-		TextToData(popConf, vtMainTexts, vtPopMainData);
+		DataToText(popConf, vtPopMainData, vtMainTexts);
+
+	if(MainTextsToMain(vtMainTexts, pMainWnd) != 0)
+		return -4;
 
 	return 0;
 }
