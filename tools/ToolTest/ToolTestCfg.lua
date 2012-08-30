@@ -23,9 +23,9 @@ config = {
 						CtrlType = "Edit",
 						Name = "参数1",
 						CName = "param1",
-						Default = "100",
+						Default = "10.5",
 						Note = "参数1为整数",
-						Cast = "Integer",
+						Cast = "Float",
 					},
 					{
 						CtrlType = "Combobox",
@@ -81,9 +81,9 @@ config = {
 						CtrlType = "Edit",
 						Name = "参数1",
 						CName = "param1",
-						Default = "100",
+						Default = "10.5",
 						Note = "参数1为整数",
-						Cast = "Integer",
+						Cast = "Float",
 					},
 					{
 						CtrlType = "Combobox",

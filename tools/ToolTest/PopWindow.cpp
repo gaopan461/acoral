@@ -6,6 +6,7 @@
 #include "PopWindow.h"
 #include "CheckComboBox.h"
 #include <stdio.h>
+#include <algorithm>
 
 //===================================================================================
 bool g_bIsPopMenu = true;
@@ -506,27 +507,21 @@ int PopMainToText(SPopMain& popMain, CString& strMainText)
 	return 0;
 }
 
-int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd)
+//配置产生的文本值写入原始控件
+int MainTextsToMain(std::vector<CString>& vtMainTexts, CWnd* pMainWnd)
 {
-	ASSERT(pPopWnd && pMainWnd);
-	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
-	
 	CHAR szClass[128];   
 	GetClassName(pMainWnd->GetSafeHwnd(), szClass, 127);   
 	if(lstrcmpi(szClass, "Edit")==0)
 	{
 		//原始控件为编辑框，弹出窗口产生的每条记录通过"|"分隔
 		CString strText;
-		for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+		for(size_t mainIdx = 0; mainIdx < vtMainTexts.size(); mainIdx++)
 		{
-			CString strMainText;
-			if(PopMainToText(vtPopMains[mainIdx], strMainText) == 0)
-			{
-				if(strText.IsEmpty())
-					strText = strMainText;
-				else
-					strText = strText + "|" + strMainText;
-			}
+			if(mainIdx)
+				strText += "|";
+
+			strText += vtMainTexts[mainIdx];
 		}
 
 		((CEdit*)pMainWnd)->SetWindowText(strText.GetBuffer());
@@ -535,17 +530,29 @@ int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd)
 	{
 		//原始控件为列表框，弹出窗口的每行配置转为列表框中的一条记录
 		((CListBox*)pMainWnd)->ResetContent();
-		for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
-		{
-			CString strMainText;
-			if(PopMainToText(vtPopMains[mainIdx], strMainText) == 0)
-				((CListBox*)pMainWnd)->AddString(strMainText.GetBuffer());
-		}
+		for(size_t mainIdx = 0; mainIdx < vtMainTexts.size(); mainIdx++)
+			((CListBox*)pMainWnd)->AddString(vtMainTexts[mainIdx].GetBuffer());
 	}
 	else
 		return -1;
 
 	return 0;
+}
+
+//配置窗口的值写入原始控件上
+int PopToMain(CPopWindow* pPopWnd, CWnd* pMainWnd)
+{
+	ASSERT(pPopWnd && pMainWnd);
+	std::vector<SPopMain>& vtPopMains = pPopWnd->GetPopMains();
+	std::vector<CString> vtMainText;
+	for(size_t mainIdx = 0; mainIdx < vtPopMains.size(); mainIdx++)
+	{
+		CString strMaintText;
+		if(PopMainToText(vtPopMains[mainIdx], strMaintText) == 0)
+			vtMainText.push_back(strMaintText);
+	}
+
+	return MainTextsToMain(vtMainText, pMainWnd);
 }
 
 //===================================================================================
@@ -1540,7 +1547,7 @@ int DataToParamText(SPopParamConf& popParamConf, std::vector<SPopParamData>& vtP
 					}
 				}
 			}
-			else if(strCtrlType == "ChechCombo")
+			else if(strCtrlType == "CheckCombo")
 			{
 				if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_ARRAY_INT)
 					return -1;
@@ -1549,7 +1556,9 @@ int DataToParamText(SPopParamConf& popParamConf, std::vector<SPopParamData>& vtP
 				bool isFirst = true;
 				for(size_t comboIdx = 0; comboIdx < vtComboItemConf.size(); comboIdx++)
 				{
-					if(vtComboItemConf[comboIdx].m_nValue == vtPopParamData[paramIdx].m_nValue)
+					int nValue = vtComboItemConf[comboIdx].m_nValue;
+					std::vector<int> vtValueData = vtPopParamData[paramIdx].m_vtValue;
+					if(std::find(vtValueData.begin(), vtValueData.end(), nValue) != vtValueData.end())
 					{
 						if(!isFirst)
 							strParamText += "`";
@@ -1624,11 +1633,6 @@ int DataToText(SPopConf& popConf, std::vector<SPopMainData>& vtPopMainData, std:
 		if(DataToMainText(vtPopMainConf[mainIdx], vtPopMainData, strMainText) == 0)
 			vtMainTexts.push_back(strMainText);
 	}
-	return 0;
-}
-
-int MainTextsToMain(std::vector<CString>& vtMainTexts, CWnd* pMainWnd)
-{
 	return 0;
 }
 
