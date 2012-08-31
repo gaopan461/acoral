@@ -444,6 +444,8 @@ bool LoadPopConfig(const std::string& name)
 {
 	//∂¡»Îlua≈‰÷√
 	lua_State* L = lua_open();
+	//int result = luaL_loadfile(L, "BaseCfg.lua");
+	//int result = luaL_dofile(L, "BaseCfg.lua");
 	luaL_dofile(L, name.c_str());
 
 	//ªÒ»°≈‰÷√
