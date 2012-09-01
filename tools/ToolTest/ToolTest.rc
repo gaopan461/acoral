@@ -16,7 +16,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// 中文(中华人民共和国) resources
+// Chinese (P.R.C.) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 #ifdef _WIN32
@@ -94,11 +94,14 @@ EXSTYLE WS_EX_APPWINDOW
 CAPTION "ToolTest"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    LTEXT           "哪些人：",IDC_NAME,12,9,28,8
-    LISTBOX         IDC_LIST1,41,7,199,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_EDIT1,41,63,199,14,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "保存",IDC_SAVETODB,41,103,50,14
-    PUSHBUTTON      "载入",IDC_LOADFROMDB,115,103,50,14
+    LISTBOX         IDC_LIST1,112,36,200,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT1,112,91,200,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "保存",IDC_SAVETODB,167,7,50,14
+    PUSHBUTTON      "载入",IDC_LOADFROMDB,111,7,50,14
+    LISTBOX         IDC_LIST2,113,120,199,71,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "编辑框",IDC_STATIC,110,81,203,26
+    GROUPBOX        "列表框",IDC_STATIC,110,26,203,52
+    GROUPBOX        "日志",IDC_STATIC,111,110,202,83
 END
 
 IDD_POP DIALOGEX 0, 0, 546, 274
@@ -200,7 +203,7 @@ BEGIN
     IDS_ABOUTBOX            "关于 ToolTest(&A)..."
 END
 
-#endif    // 中文(中华人民共和国) resources
+#endif    // Chinese (P.R.C.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
