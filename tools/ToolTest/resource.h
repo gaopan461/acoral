@@ -16,6 +16,7 @@
 #define IDC_BUTTON2                     1011
 #define IDC_LOADFROMDB                  1011
 #define IDC_LIST2                       1012
+#define IDC_LOG                         1012
 
 // Next default values for new objects
 // 
