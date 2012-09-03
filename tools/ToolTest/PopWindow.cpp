@@ -7,6 +7,7 @@
 #include "CheckComboBox.h"
 #include <stdio.h>
 #include <algorithm>
+#include <sstream>
 
 //===================================================================================
 bool g_bIsPopMenu = true;
@@ -1498,11 +1499,9 @@ int DataToParamText(SPopParamConf& popParamConf, std::vector<SPopParamData>& vtP
 					if(vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_INT)
 						return -1;
 
-					char buf[20];
-					memset(buf,' ',20);
-					sprintf_s(buf,20,"%d",vtPopParamData[paramIdx].m_nValue);
-					strValue = buf;
-					strValue.Trim();
+					std::stringstream ss;
+					ss << vtPopParamData[paramIdx].m_nValue;
+					strValue = ss.str().c_str();
 				}
 				else if(popParamConf.m_strCast == "Float")
 				{
@@ -1510,11 +1509,9 @@ int DataToParamText(SPopParamConf& popParamConf, std::vector<SPopParamData>& vtP
 						vtPopParamData[paramIdx].m_nDataType != PARAM_DATA_TYPE_FLOAT)
 						return -1;
 
-					char buf[20];
-					memset(buf,' ',20);
-					sprintf_s(buf,20,"%10.3f",vtPopParamData[paramIdx].m_fValue);
-					strValue = buf;
-					strValue.Trim();
+					std::stringstream ss;
+					ss << vtPopParamData[paramIdx].m_fValue;
+					strValue = ss.str().c_str();
 				}
 				else if(popParamConf.m_strCast == "Bool")
 				{
