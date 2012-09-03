@@ -4,6 +4,7 @@
 #include "ac_def.h"
 #include "ac_thread_guard.h"
 #include <cstdarg>
+#include <fstream>
 
 #ifdef AC_LOG
 #define LOG_INTERFACE virtual
@@ -29,7 +30,20 @@ namespace acutils
 		LOG_INFO,				//普通
 	};
 
-	class LogConsole;
+	//------------------------------------------------------
+
+	/*
+	 *	日志设施基类 
+	 */
+	class LogFacilityBase
+	{
+	public:
+		LOG_INTERFACE ~LogFacilityBase(){}
+	public:
+		LOG_INTERFACE void Output(const std::string& str){}
+	};
+
+	class LogEx;
 
 	/*
 	 *	日志基类
@@ -49,8 +63,6 @@ namespace acutils
 			m_bSingletonDestroyed = true;
 			m_pInstance = 0;
 		}
-		LOG_INTERFACE void printf(const char* format,...){}
-		LOG_INTERFACE void dump(const void* buffer,size_t size){}
 
 		//************************************
 		// Method:    AddLog 输入日志
@@ -63,6 +75,17 @@ namespace acutils
 		// Parameter: ...
 		//************************************
 		LOG_INTERFACE void AddLog(int type, const char* format,...){}
+
+
+		//************************************
+		// Method:    AddFacility 增加日志输出设施
+		// FullName:  acutils::Log::AddFacility
+		// Access:    public 
+		// Returns:   LOG_INTERFACE void
+		// Qualifier:
+		// Parameter: LogFacilityBase * pFacility
+		//************************************
+		LOG_INTERFACE void AddFacility(LogFacilityBase* pFacility){}
 	};
 
 #ifdef AC_LOG
@@ -83,14 +106,17 @@ namespace acutils
 	//------------------------------------------------------
 
 	/*
-	 *	控制台日志
+	 *	扩展日志
 	 */
-	class LogConsole : public Log
+	class LogEx : public Log
 	{
 	public:
-		LOG_INTERFACE void printf(const char* format,...);
-		LOG_INTERFACE void dump(const void* buffer,size_t size);
+		LOG_INTERFACE ~LogEx();
+	public:
 		LOG_INTERFACE void AddLog(int type, const char* format,...);
+		LOG_INTERFACE void AddFacility(LogFacilityBase* pFacility);
+	private:
+		std::vector<LogFacilityBase*> m_vtLogFacilities;
 	};
 
 #ifdef AC_LOG
@@ -101,10 +127,37 @@ namespace acutils
 			return;
 
 		ACCHECK(!m_bSingletonDestroyed);
-		static LogConsole obj;
+		static LogEx obj;
 		m_pInstance = &obj;
 	}
 #endif //AC_LOG
+
+	//------------------------------------------------------
+
+	/*
+	 *	输出到控制台 
+	 */
+	class LogFacilityConsole : public LogFacilityBase
+	{
+	public:
+		LOG_INTERFACE void Output(const std::string& str);
+	};
+
+	//------------------------------------------------------
+
+	/*
+	 *	输出到文件 
+	 */
+	class LogFacilityFile : public LogFacilityBase
+	{
+	public:
+		LogFacilityFile(const std::string& filename);
+		LOG_INTERFACE ~LogFacilityFile();
+	public:
+		LOG_INTERFACE void Output(const std::string& str);
+	private:
+		std::fstream m_objFileStream;
+	};
 
 }
 

@@ -80,15 +80,15 @@ namespace acutils
 		//程序结束时，检查是否有内存未被释放
 		if (m_pList->m_pNext == m_pList->m_pPrev)
 		{
-			Log::Instance().printf("No memory leak\n");
+			INFO_MSG("No memory leak\n");
 		}
 		else
 		{
-			Log::Instance().printf("Memory leak:\n");
+			ERROR_MSG("Memory leak:\n");
 			SMemoryCookie* iter = m_pList->m_pNext;
 			while(iter != m_pList->m_pPrev)
 			{
-				Log::Instance().printf("id=%d size=%d\n", iter->m_nId, iter->m_nSize - sizeof(SMemoryCookie));
+				ERROR_MSG("id=%d size=%d\n", iter->m_nId, iter->m_nSize - sizeof(SMemoryCookie));
 				iter = iter->m_pNext;
 			}
 		}

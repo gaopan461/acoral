@@ -9,23 +9,19 @@ namespace acutils
 	bool Log::m_bSingletonDestroyed = false;
 	long Log::m_nLogGuard = 0;
 
+	//------------------------------------------------------
 
-	void LogConsole::printf(const char* format,...)
+	LogEx::~LogEx()
 	{
-		ThreadGuard guard(&m_nLogGuard);
-		va_list argptr;
-		va_start(argptr, format);
-		vprintf(format, argptr);
-		va_end(argptr);
+		for (std::vector<LogFacilityBase*>::iterator iter = m_vtLogFacilities.begin(); iter != m_vtLogFacilities.end(); iter++)
+		{
+			delete (*iter);
+		}
+
+		m_vtLogFacilities.clear();
 	}
 
-	void LogConsole::dump(const void* buffer,size_t size)
-	{
-		ThreadGuard guard(&m_nLogGuard);
-		return ;
-	}
-
-	void LogConsole::AddLog(int type, const char* format,...)
+	void LogEx::AddLog(int type, const char* format,...)
 	{
 		ThreadGuard guard(&m_nLogGuard);
 		char* buf = NULL;
@@ -55,8 +51,42 @@ namespace acutils
 		}
 
 		str += buf;
-		std::cout << str;
+
+		for(std::vector<LogFacilityBase*>::iterator iter = m_vtLogFacilities.begin(); iter != m_vtLogFacilities.end(); iter++)
+			(*iter)->Output(str);
+		
 		if(buf)
 			delete [] buf;
+	}
+
+	void LogEx::AddFacility(LogFacilityBase* pFacility)
+	{
+		ACCHECK(pFacility);
+
+		ThreadGuard guard(&m_nLogGuard);
+		m_vtLogFacilities.push_back(pFacility);
+	}
+
+	//------------------------------------------------------
+
+	void LogFacilityConsole::Output(const std::string& str)
+	{
+		std::cout << str;
+	}
+
+	//------------------------------------------------------
+
+	LogFacilityFile::LogFacilityFile(const std::string& filename)
+		: m_objFileStream(filename.c_str(), std::ios::app|std::ios::out)
+	{}
+
+	LogFacilityFile::~LogFacilityFile()
+	{
+		m_objFileStream.close();
+	}
+
+	void LogFacilityFile::Output(const std::string &str)
+	{
+		m_objFileStream << str;
 	}
 }

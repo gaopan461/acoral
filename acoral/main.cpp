@@ -18,21 +18,31 @@ namespace acutils
 	int func()
 	{
 #ifdef TEST
-		Log::Instance().printf("define test\n");
+		INFO_MSG("define test\n");
 #else
-		Log::Instance().printf("not define test\n");
+		INFO_MSG("not define test\n");
 #endif
 		return 0;
 	}
 }
 
+void LogInit()
+{
+	acutils::Log::Instance().AddFacility(new acutils::LogFacilityFile("./test.txt"));
+	acutils::Log::Instance().AddFacility(new acutils::LogFacilityConsole());
+}
+
 int main()
 {
+	LogInit();
+	INFO_MSG("-------------------------------------------\n");
+	INFO_MSG("                Main Start                 \n");
+	INFO_MSG("-------------------------------------------\n");
 	int a = 100;
-	acutils::Log::Instance().printf("hello world, a = %d\n",a);
+	INFO_MSG("hello world, a = %d\n",a);
 
 	A* pa = new A(10);
-	acutils::Log::Instance().printf("A pa = %d\n", pa->Get());
+	INFO_MSG("A pa = %d\n", pa->Get());
 	acutils::func();
 
 	DEBUG_MSG("This is a debug message,a = %d\n",a);
@@ -41,4 +51,5 @@ int main()
 	INFO_MSG("This is a information message,a = %d\n",a);
 	return 0;
 }
+
 
