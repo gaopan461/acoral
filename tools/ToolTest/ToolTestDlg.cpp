@@ -107,8 +107,6 @@ BOOL CToolTestDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	LoadPopConfig("ToolTestCfg.lua");
-	InitCommandMap();
 
 	//设置心跳，10ms一次
 	::SetTimer(m_hWnd, 1, 10, NULL);
@@ -122,6 +120,14 @@ BOOL CToolTestDlg::OnInitDialog()
 	INFO_MSG("-------------------------------------------\n");
 	INFO_MSG("              ToolTest start               \n");
 	INFO_MSG("-------------------------------------------\n");
+
+	//载入配置
+	LoadPopConfig("ToolTestCfg.lua");
+	INFO_MSG("Load pop config success\n");
+
+	//初始化控件和配置的关联
+	InitCommandMap();
+	INFO_MSG("Init command map success\n");
 
 	//lua相关初始化
 	m_pLua = lua_open();

@@ -2,7 +2,6 @@
 //
 
 #pragma once
-#include "checkcombobox.h"
 #include "PopWindow.h"
 #include "afxwin.h"
 #include "ToolBase.h"

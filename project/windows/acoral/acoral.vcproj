@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libcommon.lib"
+				AdditionalDependencies="libcommon_d.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)Debug&quot;"
 				GenerateDebugInformation="true"

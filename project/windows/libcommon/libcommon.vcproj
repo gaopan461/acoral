@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalDependencies="lua51.lib"
-				OutputFile="$(SolutionDir)\Debug\$(ProjectName).lib"
+				OutputFile="$(SolutionDir)\Debug\$(ProjectName)_d.lib"
 				AdditionalLibraryDirectories="$(SolutionDir)..\..\deps\lua5.1\lib"
 			/>
 			<Tool
@@ -108,6 +108,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\deps\lua5.1\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -126,6 +127,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				AdditionalDependencies="lua51.lib"
+				OutputFile="$(SolutionDir)\Release\$(ProjectName).lib"
+				AdditionalLibraryDirectories="$(SolutionDir)..\..\deps\lua5.1\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
