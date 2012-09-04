@@ -1,22 +1,36 @@
 #include "stdafx.h"
 #include "ToolBase.h"
+#include "ac_thread_guard.h"
 
 namespace actools
 {
-	LogFacilityMFC::LogFacilityMFC(HWND lpPrintHwnd)
-		: m_lpPrintHwnd(lpPrintHwnd)
+	LogMFC* LogMFC::m_pInstance = 0;
+	long LogMFC::m_nSingletonGuard = 0;
+	bool LogMFC::m_bSingletonDestroyed = false;
+	long LogMFC::m_nLogGuard = 0;
+
+	LogMFC::LogMFC()
+		: m_bIsClosed(true)
 	{}
 
-	LogFacilityMFC::~LogFacilityMFC()
-	{}
-
-	void LogFacilityMFC::Output(const std::string& str)
+	LogMFC::~LogMFC()
 	{
+		m_bSingletonDestroyed = true;
+		m_pInstance = 0;
+	}
+
+	void LogMFC::AddLog(const std::string& str)
+	{
+		acutils::ThreadGuard guard(&m_nLogGuard);
 		m_vtLogCache.push_back(str);
 	}
 
-	int LogFacilityMFC::Update()
+	int LogMFC::Update()
 	{
+		acutils::ThreadGuard guard(&m_nLogGuard);
+		if(m_bIsClosed)
+			return 0;
+
 		if(!m_vtLogCache.empty())
 		{
 			std::string str = m_vtLogCache.front();
@@ -28,11 +42,57 @@ namespace actools
 		return 0;
 	}
 
+	void LogMFC::OpenLog(HWND lpPrintHwnd)
+	{
+		acutils::ThreadGuard guard(&m_nLogGuard);
+		if(!m_bIsClosed)
+			return;
+
+		m_bIsClosed = false;
+		m_lpPrintHwnd = lpPrintHwnd;
+	}
+
+	void LogMFC::CloseLog()
+	{
+		acutils::ThreadGuard guard(&m_nLogGuard);
+		if(m_bIsClosed)
+			return;
+
+		m_bIsClosed = true;
+		m_lpPrintHwnd = NULL;
+	}
+
 	//-----------------------------------------------------------
 
-	void LogInit(const std::string& filename, HWND lpPrintHwnd)
+	void LogFacilityMFC::Output(const std::string& str)
+	{
+		LogMFC::Instance().AddLog(str);
+	}
+
+	//-----------------------------------------------------------
+
+	ToolBase::ToolBase()
+	{}
+
+	ToolBase::~ToolBase()
+	{}
+
+	int ToolBase::InitTool(const std::string& filename, HWND lpPrintHwnd)
 	{
 		acutils::Log::Instance().AddFacility(new acutils::LogFacilityFile(filename));
-		acutils::Log::Instance().AddFacility(new LogFacilityMFC(lpPrintHwnd));
+		acutils::Log::Instance().AddFacility(new LogFacilityMFC());
+		LogMFC::Instance().OpenLog(lpPrintHwnd);
+		return 0;
+	}
+
+	int ToolBase::Update()
+	{
+		LogMFC::Instance().Update();
+		return 0;
+	}
+
+	void ToolBase::DeInitTool()
+	{
+		LogMFC::Instance().CloseLog();
 	}
 }

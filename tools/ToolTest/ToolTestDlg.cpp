@@ -5,6 +5,7 @@
 #include "ToolTest.h"
 #include "ToolTestDlg.h"
 #include "ac_lua.h"
+#include "ToolBase.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -57,6 +58,7 @@ CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 CToolTestDlg::~CToolTestDlg()
 {
 	lua_close(m_pLua);
+	DeInitTool();
 }
 
 void CToolTestDlg::DoDataExchange(CDataExchange* pDX)
@@ -71,6 +73,7 @@ BEGIN_MESSAGE_MAP(CToolTestDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDC_SAVETODB, &CToolTestDlg::OnBnClickedSavetodb)
 	ON_BN_CLICKED(IDC_LOADFROMDB, &CToolTestDlg::OnBnClickedLoadfromdb)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -106,6 +109,19 @@ BOOL CToolTestDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	LoadPopConfig("ToolTestCfg.lua");
 	InitCommandMap();
+
+	//设置心跳，10ms一次
+	::SetTimer(m_hWnd, 1, 10, NULL);
+
+	//for test
+	::SetTimer(m_hWnd, 2, 1000, NULL);
+
+	//初始化工具
+	InitTool("ToolTest.txt",GetDlgItem(IDC_LOG)->m_hWnd);
+
+	INFO_MSG("-------------------------------------------\n");
+	INFO_MSG("              ToolTest start               \n");
+	INFO_MSG("-------------------------------------------\n");
 
 	//lua相关初始化
 	m_pLua = lua_open();
@@ -188,4 +204,21 @@ void CToolTestDlg::OnBnClickedLoadfromdb()
 	DBToMain(m_pLua, "List1", GetDlgItem(IDC_LIST1));
 	lua_pop(m_pLua, 1);
 	// TODO: 在此添加控件通知处理程序代码
+}
+
+void CToolTestDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	//心跳到
+	if(nIDEvent == 1)
+	{
+		this->Update();
+	}
+	if (nIDEvent == 2)
+	{
+		DEBUG_MSG("-----------你好------------\n");
+	}
+
+	CDialog::OnTimer(nIDEvent);
 }

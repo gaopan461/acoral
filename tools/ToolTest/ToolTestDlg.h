@@ -5,10 +5,11 @@
 #include "checkcombobox.h"
 #include "PopWindow.h"
 #include "afxwin.h"
+#include "ToolBase.h"
 
 
 // CToolTestDlg 对话框
-class CToolTestDlg : public CDialog
+class CToolTestDlg : public CDialog, public actools::ToolBase
 {
 	HANDLE_POP_CTRL
 // 构造
@@ -39,4 +40,6 @@ public:
 	afx_msg void OnBnClickedLoadfromdb();
 private:
 	lua_State* m_pLua;
+public:
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
