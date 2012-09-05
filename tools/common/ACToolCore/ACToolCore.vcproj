@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\..\deps\lua5.1\include&quot;;&quot;$(SolutionDir)..\CheckCombo&quot;;&quot;$(SolutionDir)..\..\..\common&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\deps\lua5.1\include&quot;;&quot;$(ProjectDir)..\CheckCombo&quot;;&quot;$(ProjectDir)..\..\..\common&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\..\..\$(ProjectName)_d.lib"
+				OutputFile="$(ProjectDir)..\$(ProjectName)_d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
