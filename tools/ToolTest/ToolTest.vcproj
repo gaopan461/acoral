@@ -212,10 +212,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\ToolBase.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\ToolTest.cpp"
 				>
 			</File>
@@ -239,10 +235,6 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ToolBase.h"
 				>
 			</File>
 			<File

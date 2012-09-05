@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ToolTest", "ToolTest.vcproj", "{4A77A925-CC3A-4DE0-AF54-9F22E6A80DE9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6AE4FF4B-5A66-4975-B538-6D54B6784BF0} = {6AE4FF4B-5A66-4975-B538-6D54B6784BF0}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ACToolCore", "..\common\ACToolCore\ACToolCore.vcproj", "{6AE4FF4B-5A66-4975-B538-6D54B6784BF0}"
 EndProject

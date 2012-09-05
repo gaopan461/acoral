@@ -183,6 +183,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\ToolBase.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -203,6 +207,10 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ToolBase.h"
 				>
 			</File>
 		</Filter>
