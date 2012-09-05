@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\deps\lua5.1\include&quot;;&quot;$(ProjectDir)..\CheckCombo&quot;;&quot;$(ProjectDir)..\..\..\common&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\COptionTree&quot;;&quot;$(ProjectDir)..\..\..\deps\lua5.1\include&quot;;&quot;$(ProjectDir)..\CheckCombo&quot;;&quot;$(ProjectDir)..\..\..\common&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -187,6 +187,10 @@
 				RelativePath=".\ToolBase.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ToolTree.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -211,6 +215,10 @@
 			</File>
 			<File
 				RelativePath=".\ToolBase.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ToolTree.h"
 				>
 			</File>
 		</Filter>
