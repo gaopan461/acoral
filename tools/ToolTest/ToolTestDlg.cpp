@@ -108,6 +108,12 @@ BOOL CToolTestDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 
+	// Get log fonts
+	LOGFONT lfFont, lfDefaultFont;
+	GetFont()->GetLogFont(&lfFont);
+	GetFont()->GetLogFont(&lfDefaultFont);
+	_tcscpy(lfDefaultFont.lfFaceName, _T("Arial"));
+
 	//设置心跳，10ms一次
 	::SetTimer(m_hWnd, 1, 10, NULL);
 
@@ -120,6 +126,9 @@ BOOL CToolTestDlg::OnInitDialog()
 	INFO_MSG("-------------------------------------------\n");
 	INFO_MSG("              ToolTest start               \n");
 	INFO_MSG("-------------------------------------------\n");
+
+	//创建主树控件
+	m_objMainTree.Create("data", CRect(10,10,180,340), this, IDC_TREE_MAIN);
 
 	//载入配置
 	LoadPopConfig("ToolTestCfg.lua");

@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\common&quot;;&quot;$(SolutionDir)..\..\deps\lua5.1\include&quot;;&quot;$(SolutionDir)..\common\ACToolCore&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\common\COptionTree&quot;;&quot;$(SolutionDir)..\..\common&quot;;&quot;$(SolutionDir)..\..\deps\lua5.1\include&quot;;&quot;$(SolutionDir)..\common\ACToolCore&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

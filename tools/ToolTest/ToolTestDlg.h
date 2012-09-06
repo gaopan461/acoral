@@ -5,10 +5,12 @@
 #include "PopWindow.h"
 #include "afxwin.h"
 #include "ToolBase.h"
+#include "ToolTree.h"
 
+using namespace actools;
 
 // CToolTestDlg 对话框
-class CToolTestDlg : public CDialog, public actools::ToolBase
+class CToolTestDlg : public CDialog, public ToolBase
 {
 	HANDLE_POP_CTRL
 // 构造
@@ -41,4 +43,6 @@ private:
 	lua_State* m_pLua;
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+private:
+	ToolTree m_objMainTree;
 };

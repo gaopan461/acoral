@@ -357,7 +357,7 @@ void COptionTree::InitGlobalResources()
         CLIP_DEFAULT_PRECIS, // ClipPrecision
         DEFAULT_QUALITY, // Quality
         DEFAULT_PITCH | FF_SWISS, // PitchAndFamily
-        L"MS Sans Serif"); // Facename
+        "MS Sans Serif"); // Facename
 
     // Bold font
     m_fBoldFont = new CFont;
@@ -374,7 +374,7 @@ void COptionTree::InitGlobalResources()
         CLIP_DEFAULT_PRECIS, // ClipPrecision
         DEFAULT_QUALITY, // Quality
         DEFAULT_PITCH | FF_SWISS, // PitchAndFamily
-        L"MS Sans Serif"); // Facename
+        "MS Sans Serif"); // Facename
 }
 
 void COptionTree::DeleteGlobalResources()

@@ -79,6 +79,7 @@ namespace actools
 
 	int ToolBase::InitTool(const std::string& filename, HWND lpPrintHwnd)
 	{
+		//初始化日志
 		acutils::Log::Instance().AddFacility(new acutils::LogFacilityFile(filename));
 		acutils::Log::Instance().AddFacility(new LogFacilityMFC());
 		LogMFC::Instance().OpenLog(lpPrintHwnd);

@@ -4,6 +4,7 @@
 #include "ac_log.h"
 #include <Windows.h>
 #include <deque>
+#include <afxwin.h>
 #include "ac_thread_guard.h"
 
 namespace actools
