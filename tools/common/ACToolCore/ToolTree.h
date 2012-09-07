@@ -9,6 +9,7 @@
 #include <afxdtctl.h>
 #include <string>
 #include "OptionTree.h"
+#include "ac_lua.h"
 
 namespace actools
 {
@@ -18,9 +19,12 @@ namespace actools
 		ToolTree();
 		virtual ~ToolTree();
 	public:
-		BOOL Create(const std::string& strDatabaseName, RECT rcRect, CWnd* pWnd, UINT nID);
+		BOOL Create(RECT rcRect, CWnd* pWnd, UINT nID);
+		int SetDB(const std::string& strDBName);
+	public:
+		int UpdateDBToTree(const std::string& strDBName);
 	private:
-		std::string m_strCurrDatabaseName;
+		std::string m_strCurrDBName;
 	};
 }
 

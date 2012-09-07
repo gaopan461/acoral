@@ -39,8 +39,6 @@ public:
 	void InitCommandMap();
 	afx_msg void OnBnClickedSavetodb();
 	afx_msg void OnBnClickedLoadfromdb();
-private:
-	lua_State* m_pLua;
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 private:

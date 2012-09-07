@@ -57,7 +57,6 @@ CToolTestDlg::CToolTestDlg(CWnd* pParent /*=NULL*/)
 
 CToolTestDlg::~CToolTestDlg()
 {
-	lua_close(m_pLua);
 	DeInitTool();
 }
 
@@ -128,7 +127,7 @@ BOOL CToolTestDlg::OnInitDialog()
 	INFO_MSG("-------------------------------------------\n");
 
 	//创建主树控件
-	m_objMainTree.Create("data", CRect(10,10,180,340), this, IDC_TREE_MAIN);
+	m_objMainTree.Create(CRect(10,10,180,340), this, IDC_TREE_MAIN);
 
 	//载入配置
 	LoadPopConfig("ToolTestCfg.lua");
@@ -137,10 +136,6 @@ BOOL CToolTestDlg::OnInitDialog()
 	//初始化控件和配置的关联
 	InitCommandMap();
 	INFO_MSG("Init command map success\n");
-
-	//lua相关初始化
-	m_pLua = lua_open();
-	luaL_openlibs(m_pLua);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

@@ -71,11 +71,17 @@ namespace actools
 
 	//-----------------------------------------------------------
 
+	ToolBase* ToolBase::m_pInstance = NULL;
+
 	ToolBase::ToolBase()
-	{}
+	{
+		m_pInstance = this;
+	}
 
 	ToolBase::~ToolBase()
-	{}
+	{
+		m_pInstance = NULL;
+	}
 
 	int ToolBase::InitTool(const std::string& filename, HWND lpPrintHwnd)
 	{
@@ -83,6 +89,11 @@ namespace actools
 		acutils::Log::Instance().AddFacility(new acutils::LogFacilityFile(filename));
 		acutils::Log::Instance().AddFacility(new LogFacilityMFC());
 		LogMFC::Instance().OpenLog(lpPrintHwnd);
+
+		//lua相关初始化
+		m_pLua = lua_open();
+		luaL_openlibs(m_pLua);
+
 		return 0;
 	}
 
@@ -95,5 +106,7 @@ namespace actools
 	void ToolBase::DeInitTool()
 	{
 		LogMFC::Instance().CloseLog();
+
+		lua_close(m_pLua);
 	}
 }

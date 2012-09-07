@@ -1,16 +1,17 @@
-#include "ToolTree.h"
+  #include "ToolTree.h"
+#include "ToolBase.h"
 
 namespace actools
 {
 	ToolTree::ToolTree()
 	{
-		m_strCurrDatabaseName = "";
+		m_strCurrDBName = "";
 	}
 
 	ToolTree::~ToolTree()
 	{}
 
-	BOOL ToolTree::Create(const std::string& strDatabaseName, RECT rcRect, CWnd* pWnd, UINT nID)
+	BOOL ToolTree::Create(RECT rcRect, CWnd* pWnd, UINT nID)
 	{
 		DWORD dwStyle, dwOptions;
 
@@ -26,7 +27,21 @@ namespace actools
 
 		// Want to be notified
 		SetNotify(TRUE, this);
-		m_strCurrDatabaseName = strDatabaseName;
 		return ret;
+	}
+
+	int ToolTree::SetDB(const std::string& strDBName)
+	{
+		if(UpdateDBToTree(strDBName) != 0)
+			return -1;
+
+		m_strCurrDBName = strDBName;
+		return 0;
+	}
+
+	int ToolTree::UpdateDBToTree(const std::string& strDBName)
+	{
+		lua_State* pLua = ToolBase::Instance().GetLuaState();
+		return 0;
 	}
 }

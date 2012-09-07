@@ -6,6 +6,7 @@
 #include <deque>
 #include <afxwin.h>
 #include "ac_thread_guard.h"
+#include "ac_lua.h"
 
 namespace actools
 {
@@ -95,6 +96,20 @@ namespace actools
 		virtual int InitTool(const std::string& filename, HWND lpPrintHwnd);
 		virtual int Update();
 		virtual void DeInitTool();
+	public:
+		lua_State* GetLuaState()
+		{
+			return m_pLua;
+		}
+	public:
+		static ToolBase& Instance()
+		{
+			return *m_pInstance;
+		}
+	private:
+		static ToolBase* m_pInstance;
+	protected:
+		lua_State* m_pLua;
 	};
 }
 
